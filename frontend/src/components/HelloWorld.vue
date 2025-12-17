@@ -7,7 +7,7 @@ const data = reactive({
   resultText: "Please enter your name below 👇",
 })
 
-const activeMenu = ref(['home']) // 改为数组，支持多选
+const activeMenu = ref('home') // 改为字符串，支持单选
 const menuType = ref('tags') // tags, collections, all
 const systemType = ref(['windows']) // 改为数组，支持多选
 const searchKeyword = ref('') // 搜索关键词
@@ -53,12 +53,7 @@ function toggleSystemType(type) {
 
 // 菜单选择方法
 function toggleActiveMenu(menu) {
-  const index = activeMenu.value.indexOf(menu)
-  if (index === -1) {
-    activeMenu.value.push(menu) // 添加到数组
-  } else {
-    activeMenu.value.splice(index, 1) // 从数组中移除
-  }
+  activeMenu.value = menu // 直接设置为当前点击的菜单，实现单选
 }
 
 // 排序相关方法
@@ -229,23 +224,23 @@ onUnmounted(() => {
       <nav class="sidebar-nav">
         <!-- 标签菜单 -->
         <div v-if="menuType === 'tags'" class="menu-buttons">
-          <button class="menu-button" @click="toggleActiveMenu('home')" :class="{ active: activeMenu.includes('home') }">
+          <button class="menu-button" @click="toggleActiveMenu('home')" :class="{ active: activeMenu === 'home' }">
             <span class="menu-icon">🏠</span>
             <span class="menu-text">首页</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag1')" :class="{ active: activeMenu.includes('tag1') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag1')" :class="{ active: activeMenu === 'tag1' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">工作</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag2')" :class="{ active: activeMenu.includes('tag2') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag2')" :class="{ active: activeMenu === 'tag2' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">学习</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag3')" :class="{ active: activeMenu.includes('tag3') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag3')" :class="{ active: activeMenu === 'tag3' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">生活</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag4')" :class="{ active: activeMenu.includes('tag4') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag4')" :class="{ active: activeMenu === 'tag4' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">娱乐</span>
           </button>
@@ -253,23 +248,23 @@ onUnmounted(() => {
 
         <!-- 集合菜单 -->
         <div v-else-if="menuType === 'collections'" class="menu-buttons">
-          <button class="menu-button" @click="toggleActiveMenu('home')" :class="{ active: activeMenu.includes('home') }">
+          <button class="menu-button" @click="toggleActiveMenu('home')" :class="{ active: activeMenu === 'home' }">
             <span class="menu-icon">🏠</span>
             <span class="menu-text">首页</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection1')" :class="{ active: activeMenu.includes('collection1') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection1')" :class="{ active: activeMenu === 'collection1' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">常用工具</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection2')" :class="{ active: activeMenu.includes('collection2') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection2')" :class="{ active: activeMenu === 'collection2' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">开发资源</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection3')" :class="{ active: activeMenu.includes('collection3') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection3')" :class="{ active: activeMenu === 'collection3' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">文档资料</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection4')" :class="{ active: activeMenu.includes('collection4') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection4')" :class="{ active: activeMenu === 'collection4' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">项目管理</span>
           </button>
@@ -277,43 +272,43 @@ onUnmounted(() => {
 
         <!-- 全部菜单 -->
         <div v-else-if="menuType === 'all'" class="menu-buttons">
-          <button class="menu-button" @click="toggleActiveMenu('home')" :class="{ active: activeMenu.includes('home') }">
+          <button class="menu-button" @click="toggleActiveMenu('home')" :class="{ active: activeMenu === 'home' }">
             <span class="menu-icon">🏠</span>
             <span class="menu-text">首页</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag1')" :class="{ active: activeMenu.includes('tag1') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag1')" :class="{ active: activeMenu === 'tag1' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">工作</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag2')" :class="{ active: activeMenu.includes('tag2') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag2')" :class="{ active: activeMenu === 'tag2' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">学习</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag3')" :class="{ active: activeMenu.includes('tag3') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag3')" :class="{ active: activeMenu === 'tag3' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">生活</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('tag4')" :class="{ active: activeMenu.includes('tag4') }">
+          <button class="menu-button" @click="toggleActiveMenu('tag4')" :class="{ active: activeMenu === 'tag4' }">
             <span class="menu-icon">🏷️</span>
             <span class="menu-text">娱乐</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection1')" :class="{ active: activeMenu.includes('collection1') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection1')" :class="{ active: activeMenu === 'collection1' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">常用工具</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection2')" :class="{ active: activeMenu.includes('collection2') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection2')" :class="{ active: activeMenu === 'collection2' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">开发资源</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection3')" :class="{ active: activeMenu.includes('collection3') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection3')" :class="{ active: activeMenu === 'collection3' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">文档资料</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('collection4')" :class="{ active: activeMenu.includes('collection4') }">
+          <button class="menu-button" @click="toggleActiveMenu('collection4')" :class="{ active: activeMenu === 'collection4' }">
             <span class="menu-icon">📁</span>
             <span class="menu-text">项目管理</span>
           </button>
-          <button class="menu-button" @click="toggleActiveMenu('settings')" :class="{ active: activeMenu.includes('settings') }">
+          <button class="menu-button" @click="toggleActiveMenu('settings')" :class="{ active: activeMenu === 'settings' }">
             <span class="menu-icon">⚙️</span>
             <span class="menu-text">设置</span>
           </button>
@@ -439,7 +434,7 @@ onUnmounted(() => {
 
 /* 左侧菜单栏 */
 .sidebar {
-  width: 300px;
+  width: 200px;
   background-color: #ffffff;
   color: #333333;
   display: flex;
@@ -781,7 +776,8 @@ onUnmounted(() => {
 .content-area {
   flex: 1;
   background-color: #ecf0f1;
-  padding: 20px;
+  padding: 0;
+  margin: 0;
   overflow-y: auto;
 }
 
@@ -844,10 +840,13 @@ onUnmounted(() => {
 /* 嵌套组件区域 */
 .nested-component-area {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
   min-height: 200px;
+  height: 100%;
+  width: 100%;
 }
 
 /* 设置页面遮罩层 */
@@ -926,7 +925,7 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(255, 245, 245, 0.5);
   z-index: 2000;
   display: flex;
   justify-content: center;
@@ -935,9 +934,9 @@ onUnmounted(() => {
 
 /* 关于对话框容器 */
 .about-dialog {
-  background-color: white;
+  background-color: rgb(231, 231, 231);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(245, 200, 200, 0.2);
   width: 400px;
   max-width: 90%;
   overflow: hidden;
@@ -948,9 +947,9 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background-color: #2c3e50;
-  color: white;
+  padding: 10px 10px;
+  background-color: #d2f0dd;
+  color: rgb(0, 0, 0);
 }
 
 .about-header h2 {
@@ -967,5 +966,10 @@ onUnmounted(() => {
 
 .about-content p {
   margin: 8px 0;
+  color: #333;
 }
 </style>
+
+
+
+
