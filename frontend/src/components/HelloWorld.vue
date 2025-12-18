@@ -1081,7 +1081,7 @@ onMounted(() => {
         <div class="about-content">
           <p>Quick Cmd</p>
           <p>版本 1.0.0</p>
-          <p>一个快速命令管理工具</p>
+          <p>作者: longan55</p>
         </div>
       </div>
     </div>
@@ -1108,8 +1108,8 @@ onMounted(() => {
 /* 顶部选项菜单栏 */
 .top-menu-bar {
   height: 30px;
-  background-color: #2c3e50;
-  color: white;
+  background-color: #f8f9fa;
+  color: #333;
   display: flex;
   align-items: center;
   padding: 0 15px;
@@ -1128,7 +1128,7 @@ onMounted(() => {
 .top-menu-bar .menu-button {
   background: none;
   border: none;
-  color: white;
+  color: #333;
   padding: 5px 10px;
   border-radius: 3px;
   cursor: pointer;
@@ -1138,7 +1138,7 @@ onMounted(() => {
 
 /* 菜单按钮悬停效果 */
 .top-menu-bar .menu-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* 左侧菜单栏 */
@@ -1591,9 +1591,9 @@ onMounted(() => {
 
 /* 关于对话框容器 */
 .about-dialog {
-  background-color: rgb(231, 231, 231);
+  background-color: white;
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(245, 200, 200, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   width: 400px;
   max-width: 90%;
   overflow: hidden;
@@ -1604,14 +1604,24 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 10px;
-  background-color: #f3f3f3;
-  color: rgb(0, 0, 0);
+  padding: 8px 15px;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+/* 关于对话框关闭按钮样式 */
+.about-dialog .close-button {
+  color: #333;
+}
+
+.about-dialog .close-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .about-header h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
+  font-weight: normal;
 }
 
 /* 关于对话框内容区域 */
@@ -1669,6 +1679,7 @@ onMounted(() => {
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: black;
 }
 
 .add-interface h2 {
