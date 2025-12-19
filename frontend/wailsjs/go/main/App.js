@@ -42,8 +42,20 @@ export function GetCommands() {
   return window['go']['main']['App']['GetCommands']();
 }
 
+export function GetCommandsByCollectionID(arg1) {
+  return window['go']['main']['App']['GetCommandsByCollectionID'](arg1);
+}
+
+export function GetCommandsByTagID(arg1) {
+  return window['go']['main']['App']['GetCommandsByTagID'](arg1);
+}
+
 export function GetMenuItems() {
   return window['go']['main']['App']['GetMenuItems']();
+}
+
+export function GetStatus() {
+  return window['go']['main']['App']['GetStatus']();
 }
 
 export function GetTag(arg1) {
@@ -52,10 +64,6 @@ export function GetTag(arg1) {
 
 export function GetTags() {
   return window['go']['main']['App']['GetTags']();
-}
-
-export function Greet(arg1) {
-  return window['go']['main']['App']['Greet'](arg1);
 }
 
 export function UpdateCollection(arg1) {

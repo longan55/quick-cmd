@@ -22,13 +22,17 @@ export function GetCommand(arg1:string):Promise<main.Command>;
 
 export function GetCommands():Promise<Array<main.Command>>;
 
+export function GetCommandsByCollectionID(arg1:string):Promise<Array<main.Command>>;
+
+export function GetCommandsByTagID(arg1:string):Promise<Array<main.Command>>;
+
 export function GetMenuItems():Promise<Record<string, any>>;
+
+export function GetStatus():Promise<main.Status>;
 
 export function GetTag(arg1:string):Promise<main.Tag>;
 
 export function GetTags():Promise<Array<main.Tag>>;
-
-export function Greet(arg1:string):Promise<string>;
 
 export function UpdateCollection(arg1:main.Collection):Promise<void>;
 

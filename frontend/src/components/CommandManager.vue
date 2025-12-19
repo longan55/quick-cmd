@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- 顶部菜单栏 -->
+    <!-- 左侧上菜单栏 -->
     <TopMenuBar 
       :menuItems="menuItems"
       :activeMenu="activeMenu"
@@ -11,7 +11,7 @@
     />
     
     <div class="content-container">
-      <!-- 左侧边栏 -->
+      <!-- 左侧下边栏 -->
       <Sidebar 
         :menuItems="menuItems"
         :activeMenu="activeMenu"
@@ -25,12 +25,13 @@
         @toggle-system-type="toggleSystemType"
         @update:menuType="menuType = $event"
         @update:searchKeyword="searchKeyword = $event"
+        @update:systemType="systemType = $event"
         @toggle-sort-dropdown="toggleSortDropdown"
         @toggle-sort-option="toggleSortOption"
         @toggle-sort-direction="toggleSortDirection"
       />
       
-      <!-- 主内容区 -->
+      <!-- 右侧主内容区 -->
       <MainContent 
         :activeAddInterface="activeAddInterface"
         :menuType="menuType"
@@ -74,7 +75,7 @@ const activeAddInterface = ref('');
 const selectedItem = ref(null);
 const activeMenu = ref('home');
 const menuType = ref('tags');
-const systemType = ref(['windows']);
+const systemType = ref([]);
 const searchKeyword = ref('');
 const isSortDropdownOpen = ref(false);
 const sortOptions = ref({

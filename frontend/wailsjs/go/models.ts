@@ -5,6 +5,7 @@ export namespace main {
 	    name: string;
 	    description: string;
 	    searchCount: number;
+	    os: string;
 	    // Go type: time
 	    createdAt: any;
 	    // Go type: time
@@ -22,6 +23,7 @@ export namespace main {
 	        this.name = source["name"];
 	        this.description = source["description"];
 	        this.searchCount = source["searchCount"];
+	        this.os = source["os"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
 	        this.deletedAt = this.convertValues(source["deletedAt"], null);
@@ -52,6 +54,7 @@ export namespace main {
 	    description: string;
 	    copyCount: number;
 	    searchCount: number;
+	    os: string;
 	    tagIDs: string[];
 	    collectionIDs: string[];
 	    // Go type: time
@@ -73,6 +76,7 @@ export namespace main {
 	        this.description = source["description"];
 	        this.copyCount = source["copyCount"];
 	        this.searchCount = source["searchCount"];
+	        this.os = source["os"];
 	        this.tagIDs = source["tagIDs"];
 	        this.collectionIDs = source["collectionIDs"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
@@ -98,11 +102,64 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class SortIndex {
+	    creatTimeAsc: boolean;
+	    idAsc: boolean;
+	    nameAsc: boolean;
+	    sortValueAsc: boolean;
+	    copyCountAsc: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new SortIndex(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.creatTimeAsc = source["creatTimeAsc"];
+	        this.idAsc = source["idAsc"];
+	        this.nameAsc = source["nameAsc"];
+	        this.sortValueAsc = source["sortValueAsc"];
+	        this.copyCountAsc = source["copyCountAsc"];
+	    }
+	}
+	export class Status {
+	    os: string[];
+	    sortIndex: SortIndex;
+	
+	    static createFrom(source: any = {}) {
+	        return new Status(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.os = source["os"];
+	        this.sortIndex = this.convertValues(source["sortIndex"], SortIndex);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Tag {
 	    id: string;
 	    name: string;
 	    description: string;
 	    searchCount: number;
+	    os: string;
 	    // Go type: time
 	    createdAt: any;
 	    // Go type: time
@@ -120,6 +177,7 @@ export namespace main {
 	        this.name = source["name"];
 	        this.description = source["description"];
 	        this.searchCount = source["searchCount"];
+	        this.os = source["os"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
 	        this.deletedAt = this.convertValues(source["deletedAt"], null);

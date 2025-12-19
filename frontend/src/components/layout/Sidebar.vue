@@ -63,35 +63,35 @@
             <input type="checkbox" :checked="sortOptions.time" readonly />
             <span class="option-text">时间</span>
             <button class="sort-direction-button" @click.stop="emit('toggle-sort-direction', 'time')">
-              {{ sortDirections.time === 'asc' ? '↑' : '↓' }}
+              {{ sortDirections.time === 'asc' ? '🔼' : '🔽'}}
             </button>
           </div>
           <div class="sort-option" @click="emit('toggle-sort-option', 'name')">
             <input type="checkbox" :checked="sortOptions.name" readonly />
             <span class="option-text">名称</span>
             <button class="sort-direction-button" @click.stop="emit('toggle-sort-direction', 'name')">
-              {{ sortDirections.name === 'asc' ? '↑' : '↓' }}
+              {{ sortDirections.name === 'asc' ? '🔼' : '🔽' }}
             </button>
           </div>
           <div class="sort-option" @click="emit('toggle-sort-option', 'copyCount')">
             <input type="checkbox" :checked="sortOptions.copyCount" readonly />
             <span class="option-text">复制次数</span>
             <button class="sort-direction-button" @click.stop="emit('toggle-sort-direction', 'copyCount')">
-              {{ sortDirections.copyCount === 'asc' ? '↑' : '↓' }}
+              {{ sortDirections.copyCount === 'asc' ? '🔼' : '🔽' }}
             </button>
           </div>
           <div class="sort-option" @click="emit('toggle-sort-option', 'id')">
             <input type="checkbox" :checked="sortOptions.id" readonly />
             <span class="option-text">ID</span>
             <button class="sort-direction-button" @click.stop="emit('toggle-sort-direction', 'id')">
-              {{ sortDirections.id === 'asc' ? '↑' : '↓' }}
+              {{ sortDirections.id === 'asc' ? '🔼' : '🔽' }}
             </button>
           </div>
           <div class="sort-option" @click="emit('toggle-sort-option', 'sortValue')">
             <input type="checkbox" :checked="sortOptions.sortValue" readonly />
             <span class="option-text">排序值</span>
             <button class="sort-direction-button" @click.stop="emit('toggle-sort-direction', 'sortValue')">
-              {{ sortDirections.sortValue === 'asc' ? '↑' : '↓' }}
+              {{ sortDirections.sortValue === 'asc' ? '🔼' : '🔽' }}
             </button>
           </div>
         </div>
@@ -144,7 +144,8 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, watch } from 'vue';
+import { ref, defineProps, defineEmits, watch, onMounted } from 'vue';
+import { GetStatus } from '../../../wailsjs/go/main/App';
 
 const props = defineProps({
   menuItems: {
@@ -161,7 +162,7 @@ const props = defineProps({
   },
   systemType: {
     type: Array,
-    default: () => ['windows']
+    default: () => ['']
   },
   searchKeyword: {
     type: String,
@@ -200,10 +201,26 @@ const emit = defineEmits([
   'update:searchKeyword',
   'toggle-sort-dropdown',
   'toggle-sort-option',
-  'toggle-sort-direction'
+  'toggle-sort-direction',
+  'update:systemType'
 ]);
 
 const searchKeywordLocal = ref(props.searchKeyword);
+const systemStatus = ref(null);
+
+// 组件加载时获取系统状态
+onMounted(async () => {
+  try {
+    const status = await GetStatus();
+    systemStatus.value = status;
+    // 将status.os中的元素添加到systemType中，避免重复
+    const newSystemType = [...new Set([...props.systemType, ...status.os])];
+    // 更新系统类型选择器的状态
+    emit('update:systemType', newSystemType);
+  } catch (error) {
+    console.error('Failed to get system status:', error);
+  }
+});
 
 // 监听外部传入的searchKeyword变化
 watch(() => props.searchKeyword, (newValue) => {
@@ -268,7 +285,7 @@ function changeMenuType(type) {
   display: flex;
   position: relative;
   width: auto; /* 改为auto，让容器宽度由内容决定 */
-  max-width: calc(100% - 40px); /* 最大宽度为父容器宽度减去padding */
+  max-width: calc(100% - 15px); /* 最大宽度为父容器宽度减去padding */
   box-sizing: border-box;
   overflow: hidden;
   margin-left: auto;
@@ -278,9 +295,9 @@ function changeMenuType(type) {
 /* 搜索输入框 */
 .search-input {
   width: 200px;
-  padding: 8px 15px 8px 16px; /* 增加右侧padding，为清除按钮留出空间 */
-  border: 1px solid #069b6e;
-  border-radius: 20px 0 0 20px;
+  padding: 8px 15px 8px 8px; /* 增加右侧padding，为清除按钮留出空间 */
+  border: 1px solid #c3ff00;
+  border-radius: 18px 0 0 18px;
   font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
