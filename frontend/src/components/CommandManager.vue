@@ -21,6 +21,8 @@
         :isSortDropdownOpen="isSortDropdownOpen"
         :sortOptions="sortOptions"
         :sortDirections="sortDirections"
+        :tags="tags"
+        :collections="collections"
         @toggle-active-menu="toggleActiveMenu"
         @toggle-system-type="toggleSystemType"
         @update:menuType="menuType = $event"
@@ -35,9 +37,10 @@
       <MainContent 
         :activeAddInterface="activeAddInterface"
         :menuType="menuType"
+        :activeMenu="activeMenu"
         :tags="tags"
         :collections="collections"
-        :commands="filteredCommands"
+        :commands="commands"
         :searchKeyword="searchKeyword"
         @toggle-add-interface="toggleAddInterface"
         @update:searchKeyword="searchKeyword = $event"
@@ -64,7 +67,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { GetMenuItems } from '../../wailsjs/go/main/App';
+import { GetMenuItems,GetCommands,GetTags,GetCollections,GetCommandsByTagID,GetCommandsByCollectionID } from '../../wailsjs/go/main/App';
 import TopMenuBar from './layout/TopMenuBar.vue';
 import Sidebar from './layout/Sidebar.vue';
 import MainContent from './layout/MainContent.vue';
@@ -153,116 +156,116 @@ const collections = ref([
 ]);
 
 const commands = ref([
-  { 
-    id: '1', 
-    name: '查看当前目录', 
-    content: 'ls -la', 
-    description: '查看当前目录下的所有文件和文件夹，包括隐藏文件', 
-    tags: ['1', '4'], 
-    collections: ['1', '4'], 
-    sortValue: 1, 
-    copyCount: 10, 
-    systemType: ['linux', 'mac'] 
-  },
-  { 
-    id: '2', 
-    name: '查看当前目录', 
-    content: 'dir', 
-    description: '查看当前目录下的所有文件和文件夹', 
-    tags: ['1', '5'], 
-    collections: ['1', '5'], 
-    sortValue: 1, 
-    copyCount: 8, 
-    systemType: ['windows'] 
-  },
-  { 
-    id: '3', 
-    name: 'Git提交', 
-    content: 'git commit -m "提交信息"', 
-    description: '提交代码到Git仓库', 
-    tags: ['1', '2'], 
-    collections: ['1', '2'], 
-    sortValue: 2, 
-    copyCount: 15, 
-    systemType: ['windows', 'linux', 'mac'] 
-  },
-  { 
-    id: '4', 
-    name: 'Docker启动容器', 
-    content: 'docker start container_name', 
-    description: '启动指定的Docker容器', 
-    tags: ['1', '2'], 
-    collections: ['1', '3'], 
-    sortValue: 3, 
-    copyCount: 7, 
-    systemType: ['windows', 'linux', 'mac'] 
-  },
-  { 
-    id: '5', 
-    name: '查看IP地址', 
-    content: 'ipconfig', 
-    description: '查看Windows系统的IP地址信息', 
-    tags: ['3', '5'], 
-    collections: ['1', '5'], 
-    sortValue: 4, 
-    copyCount: 12, 
-    systemType: ['windows'] 
-  },
-  { 
-    id: '6', 
-    name: '查看IP地址', 
-    content: 'ifconfig', 
-    description: '查看Linux/Mac系统的IP地址信息', 
-    tags: ['3', '4'], 
-    collections: ['1', '4'], 
-    sortValue: 4, 
-    copyCount: 9, 
-    systemType: ['linux', 'mac'] 
-  },
-  { 
-    id: '7', 
-    name: '创建目录', 
-    content: 'mkdir directory_name', 
-    description: '创建新的目录', 
-    tags: ['1'], 
-    collections: ['1', '4'], 
-    sortValue: 5, 
-    copyCount: 6, 
-    systemType: ['linux', 'mac'] 
-  },
-  { 
-    id: '8', 
-    name: '创建目录', 
-    content: 'mkdir directory_name', 
-    description: '创建新的目录', 
-    tags: ['1'], 
-    collections: ['1', '5'], 
-    sortValue: 5, 
-    copyCount: 5, 
-    systemType: ['windows'] 
-  },
-  { 
-    id: '9', 
-    name: '删除文件', 
-    content: 'rm file_name', 
-    description: '删除指定的文件', 
-    tags: ['1', '2'], 
-    collections: ['1', '4'], 
-    sortValue: 6, 
-    copyCount: 4, 
-    systemType: ['linux', 'mac'] 
-  },
-  { 
-    id: '10', 
-    name: '删除文件', 
-    content: 'del file_name', 
-    description: '删除指定的文件', 
-    tags: ['1', '2'], 
-    collections: ['1', '5'], 
-    sortValue: 6, 
-    copyCount: 3, 
-    systemType: ['windows'] 
-  }
+  // { 
+  //   id: '1', 
+  //   name: '查看当前目录', 
+  //   content: 'ls -la', 
+  //   description: '查看当前目录下的所有文件和文件夹，包括隐藏文件', 
+  //   tags: ['1', '4'], 
+  //   collections: ['1', '4'], 
+  //   sortValue: 1, 
+  //   copyCount: 10, 
+  //   systemType: ['linux', 'mac'] 
+  // },
+  // { 
+  //   id: '2', 
+  //   name: '查看当前目录', 
+  //   content: 'dir', 
+  //   description: '查看当前目录下的所有文件和文件夹', 
+  //   tags: ['1', '5'], 
+  //   collections: ['1', '5'], 
+  //   sortValue: 1, 
+  //   copyCount: 8, 
+  //   systemType: ['windows'] 
+  // },
+  // { 
+  //   id: '3', 
+  //   name: 'Git提交', 
+  //   content: 'git commit -m "提交信息"', 
+  //   description: '提交代码到Git仓库', 
+  //   tags: ['1', '2'], 
+  //   collections: ['1', '2'], 
+  //   sortValue: 2, 
+  //   copyCount: 15, 
+  //   systemType: ['windows', 'linux', 'mac'] 
+  // },
+  // { 
+  //   id: '4', 
+  //   name: 'Docker启动容器', 
+  //   content: 'docker start container_name', 
+  //   description: '启动指定的Docker容器', 
+  //   tags: ['1', '2'], 
+  //   collections: ['1', '3'], 
+  //   sortValue: 3, 
+  //   copyCount: 7, 
+  //   systemType: ['windows', 'linux', 'mac'] 
+  // },
+  // { 
+  //   id: '5', 
+  //   name: '查看IP地址', 
+  //   content: 'ipconfig', 
+  //   description: '查看Windows系统的IP地址信息', 
+  //   tags: ['3', '5'], 
+  //   collections: ['1', '5'], 
+  //   sortValue: 4, 
+  //   copyCount: 12, 
+  //   systemType: ['windows'] 
+  // },
+  // { 
+  //   id: '6', 
+  //   name: '查看IP地址', 
+  //   content: 'ifconfig', 
+  //   description: '查看Linux/Mac系统的IP地址信息', 
+  //   tags: ['3', '4'], 
+  //   collections: ['1', '4'], 
+  //   sortValue: 4, 
+  //   copyCount: 9, 
+  //   systemType: ['linux', 'mac'] 
+  // },
+  // { 
+  //   id: '7', 
+  //   name: '创建目录', 
+  //   content: 'mkdir directory_name', 
+  //   description: '创建新的目录', 
+  //   tags: ['1'], 
+  //   collections: ['1', '4'], 
+  //   sortValue: 5, 
+  //   copyCount: 6, 
+  //   systemType: ['linux', 'mac'] 
+  // },
+  // { 
+  //   id: '8', 
+  //   name: '创建目录', 
+  //   content: 'mkdir directory_name', 
+  //   description: '创建新的目录', 
+  //   tags: ['1'], 
+  //   collections: ['1', '5'], 
+  //   sortValue: 5, 
+  //   copyCount: 5, 
+  //   systemType: ['windows'] 
+  // },
+  // { 
+  //   id: '9', 
+  //   name: '删除文件', 
+  //   content: 'rm file_name', 
+  //   description: '删除指定的文件', 
+  //   tags: ['1', '2'], 
+  //   collections: ['1', '4'], 
+  //   sortValue: 6, 
+  //   copyCount: 4, 
+  //   systemType: ['linux', 'mac'] 
+  // },
+  // { 
+  //   id: '10', 
+  //   name: '删除文件', 
+  //   content: 'del file_name', 
+  //   description: '删除指定的文件', 
+  //   tags: ['1', '2'], 
+  //   collections: ['1', '5'], 
+  //   sortValue: 6, 
+  //   copyCount: 3, 
+  //   systemType: ['windows'] 
+  // }
 ]);
 
 // 模拟菜单项数据
@@ -307,6 +310,33 @@ const filteredCommands = computed(() => {
 // 切换活动菜单
 function toggleActiveMenu(menuId) {
   activeMenu.value = menuId;
+  
+  // 根据menuType调用不同的API获取命令列表
+  if (menuType.value === 'tags') {
+    // 调用GetCommandsByTagID获取该标签下的命令
+    GetCommandsByTagID(menuId).then((result) => {
+      commands.value = result;
+      console.log("根据标签获取命令成功:", result);
+    }).catch((error) => {
+      console.error("根据标签获取命令失败:", error);
+    });
+  } else if (menuType.value === 'collections') {
+    // 调用GetCommandsByCollectionID获取该集合下的命令
+    GetCommandsByCollectionID(menuId).then((result) => {
+      commands.value = result;
+      console.log("根据集合获取命令成功:", result);
+    }).catch((error) => {
+      console.error("根据集合获取命令失败:", error);
+    });
+  } else {
+    // 默认获取所有命令
+    GetCommands().then((result) => {
+      commands.value = result;
+      console.log("获取所有命令成功:", result);
+    }).catch((error) => {
+      console.error("获取所有命令失败:", error);
+    });
+  }
 }
 
 // 切换系统类型
@@ -450,6 +480,29 @@ onMounted(() => {
     console.error("获取菜单项失败:", error);
   });
   
+  // 获取命令
+  GetCommands().then((result) => {
+    commands.value = result;
+  }).catch((error) => {
+    console.error("获取命令失败:", error);
+  });
+
+  // 获取标签
+  GetTags().then((result) => {
+    tags.value = result;
+    console.log("获取标签成功:", result);
+  }).catch((error) => {
+    console.error("获取标签失败:", error);
+  });
+
+  // 获取集合
+  GetCollections().then((result) => {
+    collections.value = result;
+    console.log("获取集合成功:", result);
+  }).catch((error) => {
+    console.error("获取集合失败:", error);
+  });
+
   // 初始化模拟数据
   console.log('初始化模拟数据');
 });

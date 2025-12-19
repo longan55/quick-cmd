@@ -144,7 +144,7 @@
     <div v-else class="query-interface">
       <div class="interface-header">
         <h2>
-          {{ menuType === 'tags' ? '标签列表' : menuType === 'collections' ? '集合列表' : '命令列表' }}
+          {{ activeMenu === 'all-tags' || activeMenu === 'all-collections' ? (menuType === 'tags' ? '标签列表' : menuType === 'collections' ? '集合列表' : '命令列表') : '命令列表' }}
         </h2>
         
         <div class="interface-actions">
@@ -155,7 +155,7 @@
       </div>
       
       <!-- 命令列表 -->
-      <div v-if="menuType === 'all'" class="table-container">
+      <div v-if="menuType === 'all' || (menuType === 'tags' && activeMenu !== 'all-tags') || (menuType === 'collections' && activeMenu !== 'all-collections')" class="table-container">
         <table class="command-table">
           <thead>
             <tr>
@@ -163,8 +163,8 @@
               <th>名称</th>
               <th>内容</th>
               <th>描述</th>
-              <th>标签</th>
-              <th>集合</th>
+              <!-- <th>标签</th>
+              <th>集合</th> -->
               <th>使用次数</th>
               <th>操作</th>
             </tr>
@@ -175,7 +175,7 @@
               <td>{{ command.name }}</td>
               <td class="command-content-cell">{{ command.content }}</td>
               <td>{{ command.description }}</td>
-              <td>
+              <!-- <td>
                 <span v-for="tagId in command.tags" :key="tagId" class="tag-badge">
                   {{ getTagName(tagId) }}
                 </span>
@@ -184,7 +184,7 @@
                 <span v-for="collId in command.collections" :key="collId" class="collection-badge">
                   {{ getCollectionName(collId) }}
                 </span>
-              </td>
+              </td> -->
               <td>{{ command.copyCount }}</td>
               <td class="action-buttons">
                 <button class="copy-button" @click="$emit('copy-to-clipboard', command.content)">
@@ -245,6 +245,10 @@ const props = defineProps({
     required: true
   },
   menuType: {
+    type: String,
+    required: true
+  },
+  activeMenu: {
     type: String,
     required: true
   },

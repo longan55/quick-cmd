@@ -101,28 +101,27 @@
       <!-- 标签菜单 -->
       <div v-if="menuType === 'tags'" class="menu-buttons">
         <button 
-          v-for="menu in menuItems.tags || []" 
-          :key="menu.id" 
+          v-for="tag in tags || []" 
+          :key="tag.id" 
           class="menu-button" 
-          @click="emit('toggle-active-menu', menu.id)" 
-          :class="{ active: activeMenu === menu.id }"
+          @click="emit('toggle-active-menu', tag.id)" 
+          :class="{ active: activeMenu === tag.id }"
         >
-          <span class="menu-icon">{{ menu.icon }}</span>
-          <span class="menu-text">{{ menu.name }}</span>
+          <!-- <span class="menu-icon">{{ tag.icon }}</span> -->
+          <span class="menu-text">{{ tag.name }}</span>
         </button>
       </div>
 
       <!-- 集合菜单 -->
       <div v-else-if="menuType === 'collections'" class="menu-buttons">
         <button 
-          v-for="menu in menuItems.collections || []" 
-          :key="menu.id" 
+          v-for="collection in collections || []" 
+          :key="collection.id" 
           class="menu-button" 
-          @click="emit('toggle-active-menu', menu.id)" 
-          :class="{ active: activeMenu === menu.id }"
+          @click="emit('toggle-active-menu', collection.id)" 
+          :class="{ active: activeMenu === collection.id }"
         >
-          <span class="menu-icon">{{ menu.icon }}</span>
-          <span class="menu-text">{{ menu.name }}</span>
+          <span class="menu-text">{{ collection.name }}</span>
         </button>
       </div>
 
@@ -145,9 +144,21 @@
 
 <script setup>
 import { ref, defineProps, defineEmits, watch, onMounted } from 'vue';
-import { GetStatus } from '../../../wailsjs/go/main/App';
+import { GetStatus, GetTags, GetCollections } from '../../../wailsjs/go/main/App';
 
 const props = defineProps({
+  tags:{
+    type: Array,
+    default: () => []
+  },
+  collections:{
+    type: Array,
+    default: () => []
+  },
+  cmdType:{
+    type: Array,
+    default: () => []
+  },
   menuItems: {
     type: Object,
     default: () => ({})
