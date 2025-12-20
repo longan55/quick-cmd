@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- 左侧上菜单栏 -->
+    <!-- 顶部菜单栏 -->
     <TopMenuBar 
       :menuItems="menuItems"
       :activeMenu="activeMenu"
@@ -11,7 +11,7 @@
     />
     
     <div class="content-container">
-      <!-- 左侧下边栏 -->
+      <!-- 左侧边栏 -->
       <Sidebar 
         :menuItems="menuItems"
         :activeMenu="activeMenu"
@@ -66,79 +66,90 @@
 </template>
 
 <script setup>
+// 导入Vue 3的响应式API和生命周期钩子
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { GetMenuItems,GetCommands,GetTags,GetCollections,GetCommandsByTagID,GetCommandsByCollectionID } from '../../wailsjs/go/main/App';
+// 导入后端API函数
+import { GetMenuItems, GetCommands, GetTags, GetCollections, GetCommandsByTagID, GetCommandsByCollectionID } from '../../wailsjs/go/main/App';
+// 导入子组件
 import TopMenuBar from './layout/TopMenuBar.vue';
 import Sidebar from './layout/Sidebar.vue';
 import MainContent from './layout/MainContent.vue';
 import Dialogs from './Dialogs.vue';
 
 // 响应式数据
+// 激活的添加界面类型（'command' | 'collection' | 'tag' | ''）
 const activeAddInterface = ref('');
+// 选中的项目
 const selectedItem = ref(null);
+// 当前激活的菜单ID
 const activeMenu = ref('home');
+// 当前菜单类型（'tags' | 'collections' | 'all'）
 const menuType = ref('tags');
+// 系统类型筛选数组
 const systemType = ref([]);
+// 搜索关键词
 const searchKeyword = ref('');
+// 排序下拉框是否打开
 const isSortDropdownOpen = ref(false);
+// 排序选项配置
 const sortOptions = ref({
-  time: false,
-  name: false,
-  copyCount: false,
-  id: false,
-  sortValue: false
+  time: false,      // 按时间排序
+  name: false,      // 按名称排序
+  copyCount: false, // 按复制次数排序
+  id: false,        // 按ID排序
+  sortValue: false  // 按排序值排序
 });
+// 排序方向配置
 const sortDirections = ref({
-  time: 'asc',
-  name: 'asc',
-  copyCount: 'asc',
-  id: 'asc',
-  sortValue: 'asc'
+  time: 'asc',      // 时间排序方向
+  name: 'asc',      // 名称排序方向
+  copyCount: 'asc', // 复制次数排序方向
+  id: 'asc',        // ID排序方向
+  sortValue: 'asc'  // 排序值排序方向
 });
+// 设置模态框是否打开
 const isSettingsModalOpen = ref(false);
+// 关于模态框是否打开
 const isAboutModalOpen = ref(false);
+// 设置数据
 const settings = ref({
-  apiEndpoint: '',
-  apiKey: '',
-  theme: 'light',
-  language: 'zh-CN'
+  apiEndpoint: '',   // API端点
+  apiKey: '',        // API密钥
+  theme: 'light',    // 主题
+  language: 'zh-CN'  // 语言
 });
 
 // 表单数据
+// 新命令表单
 const newCommand = ref({
-  id: '',
-  name: '',
-  content: '',
-  description: '',
-  tags: [],
-  collections: [],
-  sortValue: 0,
-  copyCount: 0,
-  systemType: ['windows']
+  id: '',           // 命令ID
+  name: '',         // 命令名称
+  content: '',      // 命令内容
+  description: '',  // 命令描述
+  tags: [],         // 关联的标签ID数组
+  collections: [],  // 关联的集合ID数组
+  sortValue: 0,     // 排序值
+  copyCount: 0,     // 复制次数
+  systemType: ['windows'] // 适用系统类型
 });
 
+// 新集合表单
 const newCollection = ref({
-  id: '',
-  name: '',
-  description: '',
-  sortValue: 0
+  id: '',           // 集合ID
+  name: '',         // 集合名称
+  description: '',  // 集合描述
+  sortValue: 0      // 排序值
 });
 
+// 新标签表单
 const newTag = ref({
-  id: '',
-  name: '',
-  description: '',
-  sortValue: 0
+  id: '',           // 标签ID
+  name: '',         // 标签名称
+  description: '',  // 标签描述
+  sortValue: 0      // 排序值
 });
 
-// 设置数据
-// const settings = ref({
-//   theme: 'light',
-//   autoUpdate: true,
-//   language: 'zh-CN'
-// });
-
-// 模拟数据
+// 模拟数据 - 标签列表
 const tags = ref([
   { id: '1', name: '开发', description: '开发相关指令', sortValue: 1 },
   { id: '2', name: '运维', description: '运维相关指令', sortValue: 2 },
@@ -147,6 +158,7 @@ const tags = ref([
   { id: '5', name: '网络', description: '网络相关指令', sortValue: 5 }
 ]);
 
+// 模拟数据 - 集合列表
 const collections = ref([
   { id: '1', name: '常用命令', description: '常用的命令集合', sortValue: 1 },
   { id: '2', name: 'Git命令', description: 'Git版本控制相关命令', sortValue: 2 },
@@ -155,128 +167,18 @@ const collections = ref([
   { id: '5', name: 'Windows命令', description: 'Windows系统相关命令', sortValue: 5 }
 ]);
 
-const commands = ref([
-  // { 
-  //   id: '1', 
-  //   name: '查看当前目录', 
-  //   content: 'ls -la', 
-  //   description: '查看当前目录下的所有文件和文件夹，包括隐藏文件', 
-  //   tags: ['1', '4'], 
-  //   collections: ['1', '4'], 
-  //   sortValue: 1, 
-  //   copyCount: 10, 
-  //   systemType: ['linux', 'mac'] 
-  // },
-  // { 
-  //   id: '2', 
-  //   name: '查看当前目录', 
-  //   content: 'dir', 
-  //   description: '查看当前目录下的所有文件和文件夹', 
-  //   tags: ['1', '5'], 
-  //   collections: ['1', '5'], 
-  //   sortValue: 1, 
-  //   copyCount: 8, 
-  //   systemType: ['windows'] 
-  // },
-  // { 
-  //   id: '3', 
-  //   name: 'Git提交', 
-  //   content: 'git commit -m "提交信息"', 
-  //   description: '提交代码到Git仓库', 
-  //   tags: ['1', '2'], 
-  //   collections: ['1', '2'], 
-  //   sortValue: 2, 
-  //   copyCount: 15, 
-  //   systemType: ['windows', 'linux', 'mac'] 
-  // },
-  // { 
-  //   id: '4', 
-  //   name: 'Docker启动容器', 
-  //   content: 'docker start container_name', 
-  //   description: '启动指定的Docker容器', 
-  //   tags: ['1', '2'], 
-  //   collections: ['1', '3'], 
-  //   sortValue: 3, 
-  //   copyCount: 7, 
-  //   systemType: ['windows', 'linux', 'mac'] 
-  // },
-  // { 
-  //   id: '5', 
-  //   name: '查看IP地址', 
-  //   content: 'ipconfig', 
-  //   description: '查看Windows系统的IP地址信息', 
-  //   tags: ['3', '5'], 
-  //   collections: ['1', '5'], 
-  //   sortValue: 4, 
-  //   copyCount: 12, 
-  //   systemType: ['windows'] 
-  // },
-  // { 
-  //   id: '6', 
-  //   name: '查看IP地址', 
-  //   content: 'ifconfig', 
-  //   description: '查看Linux/Mac系统的IP地址信息', 
-  //   tags: ['3', '4'], 
-  //   collections: ['1', '4'], 
-  //   sortValue: 4, 
-  //   copyCount: 9, 
-  //   systemType: ['linux', 'mac'] 
-  // },
-  // { 
-  //   id: '7', 
-  //   name: '创建目录', 
-  //   content: 'mkdir directory_name', 
-  //   description: '创建新的目录', 
-  //   tags: ['1'], 
-  //   collections: ['1', '4'], 
-  //   sortValue: 5, 
-  //   copyCount: 6, 
-  //   systemType: ['linux', 'mac'] 
-  // },
-  // { 
-  //   id: '8', 
-  //   name: '创建目录', 
-  //   content: 'mkdir directory_name', 
-  //   description: '创建新的目录', 
-  //   tags: ['1'], 
-  //   collections: ['1', '5'], 
-  //   sortValue: 5, 
-  //   copyCount: 5, 
-  //   systemType: ['windows'] 
-  // },
-  // { 
-  //   id: '9', 
-  //   name: '删除文件', 
-  //   content: 'rm file_name', 
-  //   description: '删除指定的文件', 
-  //   tags: ['1', '2'], 
-  //   collections: ['1', '4'], 
-  //   sortValue: 6, 
-  //   copyCount: 4, 
-  //   systemType: ['linux', 'mac'] 
-  // },
-  // { 
-  //   id: '10', 
-  //   name: '删除文件', 
-  //   content: 'del file_name', 
-  //   description: '删除指定的文件', 
-  //   tags: ['1', '2'], 
-  //   collections: ['1', '5'], 
-  //   sortValue: 6, 
-  //   copyCount: 3, 
-  //   systemType: ['windows'] 
-  // }
-]);
+// 模拟数据 - 命令列表（当前注释掉，使用后端API获取）
+const commands = ref([]);
 
 // 模拟菜单项数据
 const menuItems = ref({
-  topMenu: [
+  topMenu: [  // 顶部菜单
     { id: 'home', name: '首页', icon: '🏠' },
     { id: 'commands', name: '命令管理', icon: '⚡' },
     { id: 'collections', name: '集合管理', icon: '📁' },
     { id: 'tags', name: '标签管理', icon: '🏷️' }
   ],
-  tags: [
+  tags: [     // 标签菜单
     { id: 'all-tags', name: '全部标签', icon: '🏷️' },
     { id: 'dev', name: '开发', icon: '💻' },
     { id: 'ops', name: '运维', icon: '🔧' },
@@ -284,7 +186,7 @@ const menuItems = ref({
     { id: 'db', name: '数据库', icon: '🗃️' },
     { id: 'network', name: '网络', icon: '🌐' }
   ],
-  collections: [
+  collections: [  // 集合菜单
     { id: 'all-collections', name: '全部集合', icon: '📁' },
     { id: 'common', name: '常用命令', icon: '⭐' },
     { id: 'git', name: 'Git命令', icon: '🔖' },
@@ -292,7 +194,7 @@ const menuItems = ref({
     { id: 'linux', name: 'Linux命令', icon: '🐧' },
     { id: 'windows', name: 'Windows命令', icon: '🪟' }
   ],
-  all: [
+  all: [     // 全部命令菜单
     { id: 'all-commands', name: '全部命令', icon: '⚡' },
     { id: 'recent', name: '最近使用', icon: '🕒' },
     { id: 'frequent', name: '高频使用', icon: '🔥' },
@@ -309,6 +211,7 @@ const filteredCommands = computed(() => {
 
 // 切换活动菜单
 function toggleActiveMenu(menuId) {
+  // 更新当前激活的菜单ID
   activeMenu.value = menuId;
   
   // 根据menuType调用不同的API获取命令列表
@@ -341,10 +244,13 @@ function toggleActiveMenu(menuId) {
 
 // 切换系统类型
 function toggleSystemType(type) {
+  // 查找系统类型在数组中的索引
   const index = systemType.value.indexOf(type);
   if (index === -1) {
+    // 如果不存在，添加到数组中
     systemType.value.push(type);
   } else {
+    // 如果存在，从数组中移除
     systemType.value.splice(index, 1);
   }
 }
@@ -366,6 +272,7 @@ function toggleSortDirection(option) {
 
 // 切换新增界面
 function toggleAddInterface(type) {
+  // 如果当前界面是目标类型，则关闭；否则打开目标类型界面
   activeAddInterface.value = activeAddInterface.value === type ? '' : type;
 }
 
@@ -391,44 +298,55 @@ function closeAboutModal() {
 
 // 新增命令
 function addCommand(command) {
+  // 将新命令添加到命令列表
   commands.value.push(command);
   // 这里可以添加保存到后端的逻辑
 }
 
 // 新增集合
 function addCollection(collection) {
+  // 将新集合添加到集合列表
   collections.value.push(collection);
   // 这里可以添加保存到后端的逻辑
 }
 
 // 新增标签
 function addTag(tag) {
+  // 将新标签添加到标签列表
   tags.value.push(tag);
   // 这里可以添加保存到后端的逻辑
 }
 
 // 编辑项目
 function editItem(item) {
+  // 设置选中的项目
   selectedItem.value = item;
   // 这里可以添加编辑逻辑
 }
 
 // 删除项目
 function deleteItem(item) {
+  // 弹出确认对话框
   if (confirm(`确定要删除 ${item.name} 吗？`)) {
     if (item.tags) { // 是命令
+      // 查找命令在数组中的索引
       const index = commands.value.findIndex(cmd => cmd.id === item.id);
       if (index !== -1) {
+        // 从数组中移除
         commands.value.splice(index, 1);
       }
     } else if (item.collections) { // 是集合
+      // 查找集合在数组中的索引
       const index = collections.value.findIndex(col => col.id === item.id);
       if (index !== -1) {
+        // 从数组中移除
         collections.value.splice(index, 1);
       }
     } else { // 是标签
+      // 查找标签在数组中的索引
       const index = tags.value.findIndex(tag => tag.id === item.id);
       if (index !== -1) {
+        // 从数组中移除
         tags.value.splice(index, 1);
       }
     }
@@ -437,6 +355,7 @@ function deleteItem(item) {
 
 // 复制到剪贴板
 function copyToClipboard(content) {
+  // 使用浏览器的剪贴板API复制内容
   navigator.clipboard.writeText(content).then(() => {
     // 显示复制成功提示
     showCopySuccess();
@@ -462,6 +381,7 @@ function generateUUID() {
 
 // 点击空白处关闭排序下拉框
 function handleClickOutside(event) {
+  // 如果点击的元素不是排序容器的子元素，则关闭下拉框
   if (!event.target.closest('.sort-container')) {
     isSortDropdownOpen.value = false;
   }

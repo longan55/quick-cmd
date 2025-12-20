@@ -8,8 +8,10 @@
 </template>
 
 <script setup>
+// 导入Vue 3的组件API
 import { defineProps, defineEmits } from 'vue';
 
+// 定义组件属性
 const props = defineProps({
   menuItems: {
     type: Array,
@@ -25,6 +27,7 @@ const props = defineProps({
   }
 });
 
+// 定义组件事件
 const emit = defineEmits([
   'change-menu',
   'open-add-interface',

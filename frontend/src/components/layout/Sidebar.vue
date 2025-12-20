@@ -143,9 +143,12 @@
 </template>
 
 <script setup>
+// 导入Vue 3的响应式API和生命周期钩子
 import { ref, defineProps, defineEmits, watch, onMounted } from 'vue';
+// 导入后端API函数
 import { GetStatus, GetTags, GetCollections } from '../../../wailsjs/go/main/App';
 
+// 定义组件属性
 const props = defineProps({
   tags:{
     type: Array,
@@ -205,6 +208,7 @@ const props = defineProps({
   }
 });
 
+// 定义组件事件
 const emit = defineEmits([
   'toggle-active-menu', 
   'toggle-system-type',
@@ -216,12 +220,16 @@ const emit = defineEmits([
   'update:systemType'
 ]);
 
+// 本地响应式数据
+// 本地搜索关键词，用于双向绑定
 const searchKeywordLocal = ref(props.searchKeyword);
+// 系统状态
 const systemStatus = ref(null);
 
 // 组件加载时获取系统状态
 onMounted(async () => {
   try {
+    // 调用后端API获取系统状态
     const status = await GetStatus();
     systemStatus.value = status;
     // 将status.os中的元素添加到systemType中，避免重复
@@ -240,17 +248,21 @@ watch(() => props.searchKeyword, (newValue) => {
 
 // 清除搜索
 function clearSearch() {
+  // 清空本地搜索关键词
   searchKeywordLocal.value = '';
+  // 触发更新事件
   emit('update:searchKeyword', '');
 }
 
 // 切换系统类型
 function toggleSystemType(type) {
+  // 触发系统类型切换事件
   emit('toggle-system-type', type);
 }
 
 // 改变菜单类型
 function changeMenuType(type) {
+  // 触发菜单类型更新事件
   emit('update:menuType', type);
 }
 </script>
