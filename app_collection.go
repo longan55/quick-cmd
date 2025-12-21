@@ -33,6 +33,15 @@ func (a *App) GetCollection(id string) (*Collection, error) {
 func (a *App) GetCollections() []*Collection {
 	return []*Collection{
 		{
+			ID:          "0",
+			Name:        "全部",
+			Description: "全部",
+			SearchCount: 0,
+			Os:          AllOs,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		},
+		{
 			ID:          "1",
 			Name:        "常用指令",
 			Description: "常用指令集合",

@@ -48,6 +48,15 @@ func (a *App) GetTag(id string) (*Tag, error) {
 func (a *App) GetTags() []*Tag {
 	return []*Tag{
 		{
+			ID:          "0",
+			Name:        "全部",
+			Description: "全部",
+			SearchCount: 1,
+			Os:          AllOs,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		},
+		{
 			ID:          "1",
 			Name:        "存储",
 			Description: "存储空间检查",

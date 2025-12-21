@@ -10,6 +10,8 @@ const (
 	Windows OS = "windows"
 	Mac     OS = "mac"
 	Linux   OS = "linux"
+	NoneOs  OS = ""
+	AllOs   OS = "all"
 )
 
 // App struct

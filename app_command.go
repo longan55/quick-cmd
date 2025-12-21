@@ -82,6 +82,9 @@ func (a *App) GetCommands() []*Command {
 
 // GetCommandsByTagID 根据标签ID获取指令
 func (a *App) GetCommandsByTagID(tagID string) []*Command {
+	if tagID == "0" {
+		return allCommands
+	}
 	// 过滤出包含指定标签ID的命令
 	filteredCommands := make([]*Command, 0)
 	for _, cmd := range allCommands {
@@ -95,6 +98,9 @@ func (a *App) GetCommandsByTagID(tagID string) []*Command {
 	return filteredCommands
 }
 func (a *App) GetCommandsByCollectionID(collectionID string) []*Command {
+	if collectionID == "0" {
+		return allCommands
+	}
 	filteredCommands := make([]*Command, 0)
 	for _, cmd := range allCommands {
 		if cmd.DeletedAt == nil {
