@@ -18,6 +18,8 @@ export function GetCollection(arg1:string):Promise<main.Collection>;
 
 export function GetCollections():Promise<Array<main.Collection>>;
 
+export function GetCollectionsOptions(arg1:main.Option):Promise<Array<main.Collection>>;
+
 export function GetCommand(arg1:string):Promise<main.Command>;
 
 export function GetCommands():Promise<Array<main.Command>>;
@@ -26,6 +28,8 @@ export function GetCommandsByCollectionID(arg1:string):Promise<Array<main.Comman
 
 export function GetCommandsByTagID(arg1:string):Promise<Array<main.Command>>;
 
+export function GetCommandsOptions(arg1:main.Option):Promise<Array<main.Command>>;
+
 export function GetMenuItems():Promise<Record<string, any>>;
 
 export function GetStatus():Promise<main.Status>;
@@ -33,6 +37,8 @@ export function GetStatus():Promise<main.Status>;
 export function GetTag(arg1:string):Promise<main.Tag>;
 
 export function GetTags():Promise<Array<main.Tag>>;
+
+export function GetTagsOptions(arg1:main.Option):Promise<Array<main.Tag>>;
 
 export function UpdateCollection(arg1:main.Collection):Promise<void>;
 

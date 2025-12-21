@@ -44,46 +44,48 @@ func (a *App) GetTag(id string) (*Tag, error) {
 	return nil, fmt.Errorf("tag not found: %s", id)
 }
 
+var allTags = []*Tag{
+	{
+		ID:          "0",
+		Name:        "全部",
+		Description: "全部",
+		SearchCount: 1,
+		Os:          AllOs,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	},
+	{
+		ID:          "1",
+		Name:        "存储",
+		Description: "存储空间检查",
+		SearchCount: 1,
+		Os:          Linux,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	},
+	{
+		ID:          "2",
+		Name:        "进程",
+		Description: "进程管理",
+		SearchCount: 2,
+		Os:          Linux,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	},
+	{
+		ID:          "3",
+		Name:        "tcp工具",
+		Description: "tcp工具",
+		SearchCount: 3,
+		Os:          Linux,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	},
+}
+
 // GetTags 获取所有标签
 func (a *App) GetTags() []*Tag {
-	return []*Tag{
-		{
-			ID:          "0",
-			Name:        "全部",
-			Description: "全部",
-			SearchCount: 1,
-			Os:          AllOs,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-		{
-			ID:          "1",
-			Name:        "存储",
-			Description: "存储空间检查",
-			SearchCount: 1,
-			Os:          Linux,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-		{
-			ID:          "2",
-			Name:        "进程",
-			Description: "进程管理",
-			SearchCount: 2,
-			Os:          Linux,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-		{
-			ID:          "3",
-			Name:        "tcp工具",
-			Description: "tcp工具",
-			SearchCount: 3,
-			Os:          Linux,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-	}
+	return allTags
 }
 
 // UpdateTag 更新标签

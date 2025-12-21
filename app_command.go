@@ -10,7 +10,7 @@ type Command struct {
 	Name          string     `json:"name"`
 	Content       string     `json:"content"`
 	Description   string     `json:"description"`
-	CopyCount     int        `json:"copyCount"`
+	CopyCounts    int        `json:"copyCount"`
 	SearchCount   int        `json:"searchCount"`
 	Os            OS         `json:"os"`
 	TagIDs        []string   `json:"tagIDs"`        // 标签ID列表
@@ -39,7 +39,7 @@ var allCommands = []*Command{
 		Name:          "当前存储空间",
 		Content:       "df -h",
 		Description:   "列出当前存储空间",
-		CopyCount:     0,
+		CopyCounts:    0,
 		SearchCount:   0,
 		Os:            Linux,
 		TagIDs:        []string{"1"},
@@ -52,7 +52,7 @@ var allCommands = []*Command{
 		Name:          "进程号查询",
 		Content:       "ps aux",
 		Description:   "列出所有进程",
-		CopyCount:     0,
+		CopyCounts:    0,
 		SearchCount:   0,
 		Os:            Linux,
 		TagIDs:        []string{"2"},
@@ -65,7 +65,7 @@ var allCommands = []*Command{
 		Name:          "tcpdump",
 		Content:       "tcpdump -i eth0",
 		Description:   "监听eth0网卡",
-		CopyCount:     0,
+		CopyCounts:    0,
 		SearchCount:   0,
 		Os:            Linux,
 		TagIDs:        []string{"3"},
