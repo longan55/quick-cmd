@@ -21,7 +21,7 @@ var (
 // InitSqlite 初始化SQLite数据库
 func InitSqlite() {
 	// 打开SQLite数据库，使用文件存储而不是内存存储
-	db, err := sql.Open("sqlite3", "file:quick-cmd.db?cache=shared")
+	db, err := sql.Open("sqlite3", "file:quick-cmd.db?cache=shared?_foreign_keys=1")
 	if err != nil {
 		panic(err)
 	}
