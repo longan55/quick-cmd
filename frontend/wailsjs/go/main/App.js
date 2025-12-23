@@ -30,36 +30,24 @@ export function GetCollection(arg1) {
   return window['go']['main']['App']['GetCollection'](arg1);
 }
 
-export function GetCollections() {
-  return window['go']['main']['App']['GetCollections']();
-}
-
-export function GetCollectionsOptions(arg1) {
-  return window['go']['main']['App']['GetCollectionsOptions'](arg1);
-}
-
 export function GetCommand(arg1) {
   return window['go']['main']['App']['GetCommand'](arg1);
-}
-
-export function GetCommands() {
-  return window['go']['main']['App']['GetCommands']();
 }
 
 export function GetCommandsByCollectionID(arg1) {
   return window['go']['main']['App']['GetCommandsByCollectionID'](arg1);
 }
 
-export function GetCommandsByTagID(arg1) {
-  return window['go']['main']['App']['GetCommandsByTagID'](arg1);
-}
-
-export function GetCommandsOptions(arg1) {
-  return window['go']['main']['App']['GetCommandsOptions'](arg1);
+export function GetCommandsByTagId(arg1) {
+  return window['go']['main']['App']['GetCommandsByTagId'](arg1);
 }
 
 export function GetMenuItems() {
   return window['go']['main']['App']['GetMenuItems']();
+}
+
+export function GetOptions(arg1) {
+  return window['go']['main']['App']['GetOptions'](arg1);
 }
 
 export function GetStatus() {
@@ -68,14 +56,6 @@ export function GetStatus() {
 
 export function GetTag(arg1) {
   return window['go']['main']['App']['GetTag'](arg1);
-}
-
-export function GetTags() {
-  return window['go']['main']['App']['GetTags']();
-}
-
-export function GetTagsOptions(arg1) {
-  return window['go']['main']['App']['GetTagsOptions'](arg1);
 }
 
 export function UpdateCollection(arg1) {

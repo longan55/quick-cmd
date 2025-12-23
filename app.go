@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"slices"
-	"strings"
+	"fmt"
 )
 
 type OS string
@@ -44,157 +43,11 @@ func (a *App) GetMenuItems() map[string]interface{} {
 	return nil
 }
 
-func (a *App) GetTagsOptions(option Option) []*Tag {
-	if len(option.Os) == 0 {
-		return nil
-	}
-	osTags := make([]*Tag, 0, len(allTags))
-	if len(option.Os) == 3 {
-		osTags = allTags
-	} else {
-		for _, os := range option.Os {
-			for _, tag := range allTags {
-				if tag.Os == os {
-					osTags = append(osTags, tag)
-				}
-			}
-		}
-	}
-	//过滤名称
-	if option.Name == "" {
-		return osTags
-	}
-	nameTags := make([]*Tag, 0, len(osTags))
-	for _, tag := range osTags {
-		if strings.Contains(tag.Name, option.Name) {
-			nameTags = append(nameTags, tag)
-		}
-	}
-	//排序
-	if option.Sort.Name != nil {
-		slices.SortFunc(nameTags, func(a, b *Tag) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
-	//排序
-	if option.Sort.CreateTime != nil {
-		slices.SortFunc(nameTags, func(a, b *Tag) int {
-			return a.CreatedAt.Compare(b.CreatedAt)
-		})
-	}
-	//排序
-	if option.Sort.CopyCounts != nil {
-		slices.SortFunc(nameTags, func(a, b *Tag) int {
-			return a.SearchCount - b.SearchCount
-		})
-	}
-	return nameTags
-}
-
-func (a *App) GetCollectionsOptions(option Option) []*Collection {
-	if len(option.Os) == 0 {
-		return nil
-	}
-	osCollections := make([]*Collection, 0, len(allCollections))
-	if len(option.Os) == 3 {
-		osCollections = allCollections
-	} else {
-		for _, os := range option.Os {
-			for _, col := range allCollections {
-				if col.Os == os {
-					osCollections = append(osCollections, col)
-				}
-			}
-		}
-	}
-	//过滤名称
-	if option.Name == "" {
-		return osCollections
-	}
-	nameCollections := make([]*Collection, 0, len(osCollections))
-	for _, col := range osCollections {
-		if strings.Contains(col.Name, option.Name) {
-			nameCollections = append(nameCollections, col)
-		}
-	}
-	//排序
-	if option.Sort.Name != nil {
-		slices.SortFunc(nameCollections, func(a, b *Collection) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
-	//排序
-	if option.Sort.CreateTime != nil {
-		slices.SortFunc(nameCollections, func(a, b *Collection) int {
-			return a.CreatedAt.Compare(b.CreatedAt)
-		})
-	}
-	//排序
-	if option.Sort.CopyCounts != nil {
-		slices.SortFunc(nameCollections, func(a, b *Collection) int {
-			return a.SearchCount - b.SearchCount
-		})
-	}
-	return nameCollections
-}
-
-func (a *App) GetCommandsOptions(option Option) []*Command {
-	if len(option.Os) == 0 {
-		return nil
-	}
-	//过滤系统
-	ostempCommands := make([]*Command, 0, len(allCommands))
-	if len(option.Os) == 3 {
-		ostempCommands = allCommands
-	} else {
-		for _, os := range option.Os {
-			for _, cmd := range allCommands {
-				if cmd.Os == os {
-					ostempCommands = append(ostempCommands, cmd)
-				}
-			}
-		}
-	}
-	//过滤名称
-	if option.Name == "" {
-		return ostempCommands
-	}
-	nameCommands := make([]*Command, 0, len(ostempCommands))
-	for _, cmd := range ostempCommands {
-		if strings.Contains(cmd.Name, option.Name) {
-			nameCommands = append(nameCommands, cmd)
-		}
-	}
-
-	//排序
-	if option.Sort.Name != nil {
-		slices.SortFunc(nameCommands, func(a, b *Command) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
-	//排序
-	if option.Sort.CreateTime != nil {
-		slices.SortFunc(nameCommands, func(a, b *Command) int {
-			return a.CreatedAt.Compare(b.CreatedAt)
-		})
-	}
-	//排序
-	if option.Sort.CopyCounts != nil {
-		slices.SortFunc(nameCommands, func(a, b *Command) int {
-			return a.CopyCounts - b.CopyCounts
-		})
-	}
-	// if option.Sort.SortValue != nil {
-	// 	slices.SortFunc(tempCommands, func(a, b *Command) int {
-	// 		return strings.Compare(a.SortValue, b.SortValue)
-	// 	})
-	// }
-	return nameCommands
-}
-
 type Option struct {
 	Name string     `json:"name"`
 	Os   []OS       `json:"os"`
+	Type string     `json:"type"` //command,tag,collection
+	ID   uint64     `json:"id"`
 	Sort SortOption `json:"sort"`
 }
 
@@ -203,4 +56,53 @@ type SortOption struct {
 	CreateTime *string `json:"create_time"`
 	CopyCounts *string `json:"copy_counts"`
 	// SortValue  *string `json:"sort_value"`
+}
+
+func (a *App) GetOptions(option Option) Response {
+	fmt.Printf("GetOptions: %+v\n", option)
+	switch option.Type {
+	case "command":
+		return getCommandsOptions(option)
+	case "tag":
+		return getTagsOptions(option)
+	case "collection":
+		return getCollectionsOptions(option)
+	}
+	return Response{}
+}
+
+func getTagsOptions(option Option) Response {
+	// 这里应该根据option参数查询数据库获取标签列表
+	// 目前返回空列表，后续需要实现具体逻辑
+	return Response{
+		Tags:        []*Tag{},
+		Collections: []*Collection{},
+		Commands:    []*Command{},
+	}
+}
+
+func getCollectionsOptions(option Option) Response {
+	// 这里应该根据option参数查询数据库获取集合列表
+	// 目前返回空列表，后续需要实现具体逻辑
+	return Response{
+		Tags:        []*Tag{},
+		Collections: []*Collection{},
+		Commands:    []*Command{},
+	}
+}
+
+func getCommandsOptions(option Option) Response {
+	// 这里应该根据option参数查询数据库获取命令列表
+	// 目前返回空列表，后续需要实现具体逻辑
+	return Response{
+		Tags:        []*Tag{},
+		Collections: []*Collection{},
+		Commands:    []*Command{},
+	}
+}
+
+type Response struct {
+	Tags        []*Tag        `json:"tags"`
+	Collections []*Collection `json:"collections"`
+	Commands    []*Command    `json:"options"`
 }

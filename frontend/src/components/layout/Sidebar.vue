@@ -9,7 +9,7 @@
           class="search-input" 
           placeholder="搜索..." 
           autocomplete="off"
-          @input="emit('update:searchKeyword', searchKeywordLocal)"
+          @keyup.enter="performSearch"
         />
         <!-- 清除按钮，只有输入内容时显示 -->
         <button 
@@ -19,7 +19,7 @@
         >
           ✕
         </button>
-        <button class="search-button">
+        <button class="search-button" @click="performSearch">
           🔍
         </button>
       </div>
@@ -144,9 +144,8 @@
 
 <script setup>
 // 导入Vue 3的响应式API和生命周期钩子
-import { ref, defineProps, defineEmits, watch, onMounted } from 'vue';
+import { ref, defineProps, defineEmits, watch } from 'vue';
 // 导入后端API函数
-import { GetStatus, GetTags, GetCollections } from '../../../wailsjs/go/main/App';
 
 // 定义组件属性
 const props = defineProps({
@@ -223,23 +222,6 @@ const emit = defineEmits([
 // 本地响应式数据
 // 本地搜索关键词，用于双向绑定
 const searchKeywordLocal = ref(props.searchKeyword);
-// 系统状态
-const systemStatus = ref(null);
-
-// 组件加载时获取系统状态
-onMounted(async () => {
-  try {
-    // 调用后端API获取系统状态
-    const status = await GetStatus();
-    systemStatus.value = status;
-    // 将status.os中的元素添加到systemType中，避免重复
-    const newSystemType = [...new Set([...props.systemType, ...status.os])];
-    // 更新系统类型选择器的状态
-    emit('update:systemType', newSystemType);
-  } catch (error) {
-    console.error('Failed to get system status:', error);
-  }
-});
 
 // 监听外部传入的searchKeyword变化
 watch(() => props.searchKeyword, (newValue) => {
@@ -252,6 +234,14 @@ function clearSearch() {
   searchKeywordLocal.value = '';
   // 触发更新事件
   emit('update:searchKeyword', '');
+  // 执行搜索
+  performSearch();
+}
+
+// 执行搜索
+function performSearch() {
+  // 触发搜索关键词更新事件
+  emit('update:searchKeyword', searchKeywordLocal.value);
 }
 
 // 切换系统类型

@@ -67,9 +67,9 @@
 
 <script setup>
 // 导入Vue 3的响应式API和生命周期钩子
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 // 导入后端API函数
-import { GetMenuItems, GetCommands, GetTags, GetCollections, GetCommandsByTagID, GetCommandsByCollectionID } from '../../wailsjs/go/main/App';
+import { GetMenuItems, GetOptions } from '../../wailsjs/go/main/App';
 // 导入子组件
 import TopMenuBar from './layout/TopMenuBar.vue';
 import Sidebar from './layout/Sidebar.vue';
@@ -209,37 +209,63 @@ const filteredCommands = computed(() => {
   });
 });
 
+// 构建排序参数的辅助函数
+function buildSortParams() {
+  const sort = {};
+  
+  // 只传递勾选的排序选项
+  if (sortOptions.value.name) {
+    sort.name = sortDirections.value.name; // asc 或 desc
+  } else {
+    sort.name = null;
+  }
+  
+  if (sortOptions.value.time) {
+    sort.create_time = sortDirections.value.time; // asc 或 desc
+  } else {
+    sort.create_time = null;
+  }
+  
+  if (sortOptions.value.copyCount) {
+    sort.copy_counts = sortDirections.value.copyCount; // asc 或 desc
+  } else {
+    sort.copy_counts = null;
+  }
+  
+  return sort;
+}
+
 // 切换活动菜单
 function toggleActiveMenu(menuId) {
   // 更新当前激活的菜单ID
   activeMenu.value = menuId;
   
-  // 根据menuType调用不同的API获取命令列表
-  if (menuType.value === 'tags') {
-    // 调用GetCommandsByTagID获取该标签下的命令
-    GetCommandsByTagID(menuId).then((result) => {
-      commands.value = result;
-      console.log("根据标签获取命令成功:", result);
-    }).catch((error) => {
-      console.error("根据标签获取命令失败:", error);
-    });
-  } else if (menuType.value === 'collections') {
-    // 调用GetCommandsByCollectionID获取该集合下的命令
-    GetCommandsByCollectionID(menuId).then((result) => {
-      commands.value = result;
-      console.log("根据集合获取命令成功:", result);
-    }).catch((error) => {
-      console.error("根据集合获取命令失败:", error);
-    });
-  } else {
-    // 默认获取所有命令
-    GetCommands().then((result) => {
-      commands.value = result;
-      console.log("获取所有命令成功:", result);
-    }).catch((error) => {
-      console.error("获取所有命令失败:", error);
-    });
-  }
+  // 构建Option参数
+  const option = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(menuId),
+    Sort: buildSortParams()
+  };
+  
+  // 调用GetOptions获取数据
+  GetOptions(option).then((result) => {
+    console.log("获取数据成功:", result);
+    
+    // 更新数据
+    if (result.tags) {
+      tags.value = result.tags;
+    }
+    if (result.collections) {
+      collections.value = result.collections;
+    }
+    if (result.options) {
+      commands.value = result.options;
+    }
+  }).catch((error) => {
+    console.error("获取数据失败:", error);
+  });
 }
 
 // 切换系统类型
@@ -253,6 +279,32 @@ function toggleSystemType(type) {
     // 如果存在，从数组中移除
     systemType.value.splice(index, 1);
   }
+  
+  // 调用GetOptions获取数据
+  const option = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(activeMenu.value),
+    Sort: buildSortParams()
+  };
+  
+  GetOptions(option).then((result) => {
+    console.log("获取数据成功:", result);
+    
+    // 更新数据
+    if (result.tags) {
+      tags.value = result.tags;
+    }
+    if (result.collections) {
+      collections.value = result.collections;
+    }
+    if (result.options) {
+      commands.value = result.options;
+    }
+  }).catch((error) => {
+    console.error("获取数据失败:", error);
+  });
 }
 
 // 切换排序下拉框
@@ -400,31 +452,32 @@ onMounted(() => {
     console.error("获取菜单项失败:", error);
   });
   
-  // 获取命令
-  GetCommands().then((result) => {
-    commands.value = result;
+  // 构建初始Option参数
+  const option = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(activeMenu.value),
+    Sort: buildSortParams()
+  };
+  
+  // 调用GetOptions获取初始数据
+  GetOptions(option).then((result) => {
+    console.log("获取初始数据成功:", result);
+    
+    // 更新数据
+    if (result.tags) {
+      tags.value = result.tags;
+    }
+    if (result.collections) {
+      collections.value = result.collections;
+    }
+    if (result.options) {
+      commands.value = result.options;
+    }
   }).catch((error) => {
-    console.error("获取命令失败:", error);
+    console.error("获取初始数据失败:", error);
   });
-
-  // 获取标签
-  GetTags().then((result) => {
-    tags.value = result;
-    console.log("获取标签成功:", result);
-  }).catch((error) => {
-    console.error("获取标签失败:", error);
-  });
-
-  // 获取集合
-  GetCollections().then((result) => {
-    collections.value = result;
-    console.log("获取集合成功:", result);
-  }).catch((error) => {
-    console.error("获取集合失败:", error);
-  });
-
-  // 初始化模拟数据
-  console.log('初始化模拟数据');
 });
 
 // 组件卸载时
@@ -432,6 +485,96 @@ onUnmounted(() => {
   // 解绑点击事件
   document.removeEventListener('click', handleClickOutside);
 });
+
+// 监听菜单类型变化
+watch(() => menuType.value, () => {
+  // 构建Option参数
+  const option = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(activeMenu.value),
+    Sort: buildSortParams()
+  };
+  
+  // 调用GetOptions获取数据
+  GetOptions(option).then((result) => {
+    console.log("获取数据成功:", result);
+    
+    // 更新数据
+    if (result.tags) {
+      tags.value = result.tags;
+    }
+    if (result.collections) {
+      collections.value = result.collections;
+    }
+    if (result.options) {
+      commands.value = result.options;
+    }
+  }).catch((error) => {
+    console.error("获取数据失败:", error);
+  });
+});
+
+// 监听搜索关键词变化
+watch(() => searchKeyword.value, () => {
+  // 构建Option参数
+  const option = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(activeMenu.value),
+    Sort: buildSortParams()
+  };
+  
+  // 调用GetOptions获取数据
+  GetOptions(option).then((result) => {
+    console.log("获取数据成功:", result);
+    
+    // 更新数据
+    if (result.tags) {
+      tags.value = result.tags;
+    }
+    if (result.collections) {
+      collections.value = result.collections;
+    }
+    if (result.options) {
+      commands.value = result.options;
+    }
+  }).catch((error) => {
+    console.error("获取数据失败:", error);
+  });
+});
+
+// 监听排序选项变化
+watch([sortOptions, sortDirections], () => {
+  // 构建Option参数
+  const option = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(activeMenu.value),
+    Sort: buildSortParams()
+  };
+  
+  // 调用GetOptions获取数据
+  GetOptions(option).then((result) => {
+    console.log("获取数据成功:", result);
+    
+    // 更新数据
+    if (result.tags) {
+      tags.value = result.tags;
+    }
+    if (result.collections) {
+      collections.value = result.collections;
+    }
+    if (result.options) {
+      commands.value = result.options;
+    }
+  }).catch((error) => {
+    console.error("获取数据失败:", error);
+  });
+}, { deep: true });
 </script>
 
 <style scoped>

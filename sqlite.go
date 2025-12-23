@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var (
@@ -35,10 +35,11 @@ func InitSqlite() {
 
 // createTables 创建所有必需的表
 func createTables() error {
+	var err error
 	// 创建标签表
-	_, err := DB.Exec(`
+	_, err = DB.Exec(`
 	CREATE TABLE IF NOT EXISTS tags (
-		id TEXT PRIMARY KEY,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		description TEXT,
 		search_count INTEGER DEFAULT 0,
@@ -55,7 +56,7 @@ func createTables() error {
 	// 创建集合表
 	_, err = DB.Exec(`
 	CREATE TABLE IF NOT EXISTS collections (
-		id TEXT PRIMARY KEY,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		description TEXT,
 		search_count INTEGER DEFAULT 0,
@@ -72,7 +73,7 @@ func createTables() error {
 	// 创建命令表
 	_, err = DB.Exec(`
 	CREATE TABLE IF NOT EXISTS commands (
-		id TEXT PRIMARY KEY,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		content TEXT NOT NULL,
 		description TEXT,
@@ -91,8 +92,8 @@ func createTables() error {
 	// 创建命令与标签的多对多关系表
 	_, err = DB.Exec(`
 	CREATE TABLE IF NOT EXISTS command_tags (
-		command_id TEXT NOT NULL,
-		tag_id TEXT NOT NULL,
+		command_id INTEGER NOT NULL,
+		tag_id INTEGER NOT NULL,
 		PRIMARY KEY (command_id, tag_id),
 		FOREIGN KEY (command_id) REFERENCES commands(id) ON DELETE CASCADE,
 		FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
@@ -105,8 +106,8 @@ func createTables() error {
 	// 创建命令与集合的多对多关系表
 	_, err = DB.Exec(`
 	CREATE TABLE IF NOT EXISTS command_collections (
-		command_id TEXT NOT NULL,
-		collection_id TEXT NOT NULL,
+		command_id INTEGER NOT NULL,
+		collection_id INTEGER NOT NULL,
 		PRIMARY KEY (command_id, collection_id),
 		FOREIGN KEY (command_id) REFERENCES commands(id) ON DELETE CASCADE,
 		FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
@@ -121,32 +122,34 @@ func createTables() error {
 
 // CreateTagSQLite 创建标签
 func CreateTagSQLite(tag *Tag) error {
-	// 简单的ID生成
-	if tag.ID == "" {
-		tag.ID = fmt.Sprintf("tag_%d", time.Now().UnixNano())
-	}
-
 	now := time.Now()
 	tag.CreatedAt = now
 	tag.UpdatedAt = now
 	tag.SearchCount = 0
 
-	// 保存到SQLite数据库
-	_, err := DB.Exec(
-		"INSERT INTO tags (id, name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		tag.ID, tag.Name, tag.Description, tag.SearchCount, tag.Os, tag.CreatedAt, tag.UpdatedAt, tag.DeletedAt,
+	// 保存到SQLite数据库，不指定id字段，让SQLite自动生成
+	result, err := DB.Exec(
+		"INSERT INTO tags (name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		tag.Name, tag.Description, tag.SearchCount, tag.Os, tag.CreatedAt, tag.UpdatedAt, tag.DeletedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("创建标签失败: %v", err)
 	}
 
+	// 获取SQLite自动生成的ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("获取标签ID失败: %v", err)
+	}
+	tag.ID = uint64(id)
+
 	return nil
 }
 
 // GetTagSQLite 获取单个标签
-func GetTagSQLite(id string) (*Tag, error) {
+func GetTagSQLite(id uint64) (*Tag, error) {
 	// 输入验证
-	if id == "" {
+	if id == 0 {
 		return nil, fmt.Errorf("标签ID不能为空")
 	}
 
@@ -162,7 +165,7 @@ func GetTagSQLite(id string) (*Tag, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("tag not found: %s", id)
+			return nil, fmt.Errorf("tag not found: %d", id)
 		}
 		return nil, fmt.Errorf("获取标签失败: %v", err)
 	}
@@ -232,7 +235,7 @@ func UpdateTagSQLite(tag *Tag) error {
 }
 
 // DeleteTagSQLite 删除标签（软删除）
-func DeleteTagSQLite(id string) error {
+func DeleteTagSQLite(id uint64) error {
 	now := time.Now()
 
 	// 更新标签的deleted_at字段
@@ -259,32 +262,34 @@ func DeleteTagSQLite(id string) error {
 
 // CreateCollectionSQLite 创建集合
 func CreateCollectionSQLite(collection *Collection) error {
-	// 简单的ID生成
-	if collection.ID == "" {
-		collection.ID = fmt.Sprintf("collection_%d", time.Now().UnixNano())
-	}
-
 	now := time.Now()
 	collection.CreatedAt = now
 	collection.UpdatedAt = now
 	collection.SearchCount = 0
 
-	// 保存到SQLite数据库
-	_, err := DB.Exec(
-		"INSERT INTO collections (id, name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		collection.ID, collection.Name, collection.Description, collection.SearchCount, collection.Os, collection.CreatedAt, collection.UpdatedAt, collection.DeletedAt,
+	// 保存到SQLite数据库，不指定id字段，让SQLite自动生成
+	result, err := DB.Exec(
+		"INSERT INTO collections (name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		collection.Name, collection.Description, collection.SearchCount, collection.Os, collection.CreatedAt, collection.UpdatedAt, collection.DeletedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("创建集合失败: %v", err)
 	}
 
+	// 获取SQLite自动生成的ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("获取集合ID失败: %v", err)
+	}
+	collection.ID = uint64(id)
+
 	return nil
 }
 
 // GetCollectionSQLite 获取单个集合
-func GetCollectionSQLite(id string) (*Collection, error) {
+func GetCollectionSQLite(id uint64) (*Collection, error) {
 	// 输入验证
-	if id == "" {
+	if id == 0 {
 		return nil, fmt.Errorf("集合ID不能为空")
 	}
 
@@ -300,7 +305,7 @@ func GetCollectionSQLite(id string) (*Collection, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("collection not found: %s", id)
+			return nil, fmt.Errorf("collection not found: %d", id)
 		}
 		return nil, fmt.Errorf("获取集合失败: %v", err)
 	}
@@ -370,7 +375,7 @@ func UpdateCollectionSQLite(collection *Collection) error {
 }
 
 // DeleteCollectionSQLite 删除集合（软删除）
-func DeleteCollectionSQLite(id string) error {
+func DeleteCollectionSQLite(id uint64) error {
 	now := time.Now()
 
 	// 更新集合的deleted_at字段
@@ -389,7 +394,7 @@ func DeleteCollectionSQLite(id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("collection not found: %s", id)
+		return fmt.Errorf("collection not found: %d", id)
 	}
 
 	return nil
@@ -397,25 +402,27 @@ func DeleteCollectionSQLite(id string) error {
 
 // CreateCommandSQLite 创建命令
 func CreateCommandSQLite(cmd *Command) error {
-	// 简单的ID生成
-	if cmd.ID == "" {
-		cmd.ID = fmt.Sprintf("command_%d", time.Now().UnixNano())
-	}
-
 	now := time.Now()
 	cmd.CreatedAt = now
 	cmd.UpdatedAt = now
 	cmd.CopyCounts = 0
 	cmd.SearchCount = 0
 
-	// 保存命令基本信息到SQLite数据库
-	_, err := DB.Exec(
-		"INSERT INTO commands (id, name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		cmd.ID, cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, cmd.Os, cmd.CreatedAt, cmd.UpdatedAt, cmd.DeletedAt,
+	// 保存命令基本信息到SQLite数据库，不指定id字段，让SQLite自动生成
+	result, err := DB.Exec(
+		"INSERT INTO commands (name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, cmd.Os, cmd.CreatedAt, cmd.UpdatedAt, cmd.DeletedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("创建命令失败: %v", err)
 	}
+
+	// 获取SQLite自动生成的ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("获取命令ID失败: %v", err)
+	}
+	cmd.ID = uint64(id)
 
 	// 保存命令与标签的多对多关系
 	for _, tagID := range cmd.TagIDs {
@@ -435,9 +442,9 @@ func CreateCommandSQLite(cmd *Command) error {
 }
 
 // GetCommandSQLite 获取单个命令
-func GetCommandSQLite(id string) (*Command, error) {
+func GetCommandSQLite(id uint64) (*Command, error) {
 	// 输入验证
-	if id == "" {
+	if id == 0 {
 		return nil, fmt.Errorf("命令ID不能为空")
 	}
 
@@ -453,7 +460,7 @@ func GetCommandSQLite(id string) (*Command, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("command not found: %s", id)
+			return nil, fmt.Errorf("command not found: %d", id)
 		}
 		return nil, fmt.Errorf("获取命令失败: %v", err)
 	}
@@ -532,7 +539,7 @@ func UpdateCommandSQLite(cmd *Command) error {
 	if cmd == nil {
 		return fmt.Errorf("命令对象不能为空")
 	}
-	if cmd.ID == "" {
+	if cmd.ID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
 
@@ -575,9 +582,9 @@ func UpdateCommandSQLite(cmd *Command) error {
 }
 
 // DeleteCommandSQLite 删除命令（软删除）
-func DeleteCommandSQLite(id string) error {
+func DeleteCommandSQLite(id uint64) error {
 	// 输入验证
-	if id == "" {
+	if id == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
 
@@ -599,7 +606,7 @@ func DeleteCommandSQLite(id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("command not found: %s", id)
+		return fmt.Errorf("command not found: %d", id)
 	}
 
 	return nil
@@ -608,12 +615,12 @@ func DeleteCommandSQLite(id string) error {
 // 管理命令与标签的多对多关系
 
 // AddTagToCommandSQLite 添加标签到命令
-func AddTagToCommandSQLite(commandID, tagID string) error {
+func AddTagToCommandSQLite(commandID uint64, tagID uint64) error {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
-	if tagID == "" {
+	if tagID == 0 {
 		return fmt.Errorf("标签ID不能为空")
 	}
 
@@ -635,12 +642,12 @@ func AddTagToCommandSQLite(commandID, tagID string) error {
 }
 
 // RemoveTagFromCommandSQLite 从命令移除标签
-func RemoveTagFromCommandSQLite(commandID, tagID string) error {
+func RemoveTagFromCommandSQLite(commandID, tagID uint64) error {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
-	if tagID == "" {
+	if tagID == 0 {
 		return fmt.Errorf("标签ID不能为空")
 	}
 
@@ -657,9 +664,9 @@ func RemoveTagFromCommandSQLite(commandID, tagID string) error {
 }
 
 // RemoveAllTagsFromCommandSQLite 从命令移除所有标签
-func RemoveAllTagsFromCommandSQLite(commandID string) error {
+func RemoveAllTagsFromCommandSQLite(commandID uint64) error {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
 
@@ -676,13 +683,13 @@ func RemoveAllTagsFromCommandSQLite(commandID string) error {
 }
 
 // GetTagIDsByCommandIDSQLite 获取命令的所有标签ID
-func GetTagIDsByCommandIDSQLite(commandID string) ([]string, error) {
+func GetTagIDsByCommandIDSQLite(commandID uint64) ([]uint64, error) {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return nil, fmt.Errorf("commandID不能为空")
 	}
 
-	var tagIDs []string
+	var tagIDs []uint64
 
 	// 使用参数化查询，防止SQL注入
 	rows, err := DB.Query(
@@ -696,7 +703,7 @@ func GetTagIDsByCommandIDSQLite(commandID string) ([]string, error) {
 
 	// 遍历结果集
 	for rows.Next() {
-		var tagID string
+		var tagID uint64
 		if err := rows.Scan(&tagID); err != nil {
 			return nil, fmt.Errorf("扫描标签ID失败: %v", err)
 		}
@@ -713,12 +720,12 @@ func GetTagIDsByCommandIDSQLite(commandID string) ([]string, error) {
 // 管理命令与集合的多对多关系
 
 // AddCollectionToCommandSQLite 添加集合到命令
-func AddCollectionToCommandSQLite(commandID, collectionID string) error {
+func AddCollectionToCommandSQLite(commandID uint64, collectionID uint64) error {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
-	if collectionID == "" {
+	if collectionID == 0 {
 		return fmt.Errorf("集合ID不能为空")
 	}
 
@@ -740,12 +747,12 @@ func AddCollectionToCommandSQLite(commandID, collectionID string) error {
 }
 
 // RemoveCollectionFromCommandSQLite 从命令移除集合
-func RemoveCollectionFromCommandSQLite(commandID, collectionID string) error {
+func RemoveCollectionFromCommandSQLite(commandID uint64, collectionID uint64) error {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
-	if collectionID == "" {
+	if collectionID == 0 {
 		return fmt.Errorf("集合ID不能为空")
 	}
 
@@ -762,9 +769,9 @@ func RemoveCollectionFromCommandSQLite(commandID, collectionID string) error {
 }
 
 // RemoveAllCollectionsFromCommandSQLite 从命令移除所有集合
-func RemoveAllCollectionsFromCommandSQLite(commandID string) error {
+func RemoveAllCollectionsFromCommandSQLite(commandID uint64) error {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return fmt.Errorf("命令ID不能为空")
 	}
 
@@ -781,13 +788,13 @@ func RemoveAllCollectionsFromCommandSQLite(commandID string) error {
 }
 
 // GetCollectionIDsByCommandIDSQLite 获取命令的所有集合ID
-func GetCollectionIDsByCommandIDSQLite(commandID string) ([]string, error) {
+func GetCollectionIDsByCommandIDSQLite(commandID uint64) ([]uint64, error) {
 	// 输入验证
-	if commandID == "" {
+	if commandID == 0 {
 		return nil, fmt.Errorf("commandID不能为空")
 	}
 
-	var collectionIDs []string
+	var collectionIDs []uint64
 
 	// 使用参数化查询，防止SQL注入
 	rows, err := DB.Query(
@@ -801,7 +808,7 @@ func GetCollectionIDsByCommandIDSQLite(commandID string) ([]string, error) {
 
 	// 遍历结果集
 	for rows.Next() {
-		var collectionID string
+		var collectionID uint64
 		if err := rows.Scan(&collectionID); err != nil {
 			return nil, fmt.Errorf("扫描集合ID失败: %v", err)
 		}

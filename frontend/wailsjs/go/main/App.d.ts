@@ -8,37 +8,27 @@ export function CreateCommand(arg1:main.Command):Promise<void>;
 
 export function CreateTag(arg1:main.Tag):Promise<void>;
 
-export function DeleteCollection(arg1:string):Promise<void>;
+export function DeleteCollection(arg1:number):Promise<void>;
 
-export function DeleteCommand(arg1:string):Promise<void>;
+export function DeleteCommand(arg1:number):Promise<void>;
 
-export function DeleteTag(arg1:string):Promise<void>;
+export function DeleteTag(arg1:number):Promise<void>;
 
-export function GetCollection(arg1:string):Promise<main.Collection>;
+export function GetCollection(arg1:number):Promise<main.Collection>;
 
-export function GetCollections():Promise<Array<main.Collection>>;
+export function GetCommand(arg1:number):Promise<main.Command>;
 
-export function GetCollectionsOptions(arg1:main.Option):Promise<Array<main.Collection>>;
+export function GetCommandsByCollectionID(arg1:main.Option):Promise<Array<main.Command>>;
 
-export function GetCommand(arg1:string):Promise<main.Command>;
-
-export function GetCommands():Promise<Array<main.Command>>;
-
-export function GetCommandsByCollectionID(arg1:string):Promise<Array<main.Command>>;
-
-export function GetCommandsByTagID(arg1:string):Promise<Array<main.Command>>;
-
-export function GetCommandsOptions(arg1:main.Option):Promise<Array<main.Command>>;
+export function GetCommandsByTagId(arg1:main.Option):Promise<Array<main.Command>>;
 
 export function GetMenuItems():Promise<Record<string, any>>;
 
+export function GetOptions(arg1:main.Option):Promise<main.Response>;
+
 export function GetStatus():Promise<main.Status>;
 
-export function GetTag(arg1:string):Promise<main.Tag>;
-
-export function GetTags():Promise<Array<main.Tag>>;
-
-export function GetTagsOptions(arg1:main.Option):Promise<Array<main.Tag>>;
+export function GetTag(arg1:number):Promise<main.Tag>;
 
 export function UpdateCollection(arg1:main.Collection):Promise<void>;
 
