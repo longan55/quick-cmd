@@ -69,7 +69,7 @@
 // 导入Vue 3的响应式API和生命周期钩子
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 // 导入后端API函数
-import { GetMenuItems, GetOptions } from '../../wailsjs/go/main/App';
+import { GetMenuItems, GetOptions, CreateTag, CreateCollection } from '../../wailsjs/go/main/App';
 // 导入子组件
 import TopMenuBar from './layout/TopMenuBar.vue';
 import Sidebar from './layout/Sidebar.vue';
@@ -86,7 +86,7 @@ const activeMenu = ref('home');
 // 当前菜单类型（'tags' | 'collections' | 'all'）
 const menuType = ref('tags');
 // 系统类型筛选数组
-const systemType = ref([]);
+const systemType = ref(['linux']);
 // 搜索关键词
 const searchKeyword = ref('');
 // 排序下拉框是否打开
@@ -356,17 +356,29 @@ function addCommand(command) {
 }
 
 // 新增集合
-function addCollection(collection) {
-  // 将新集合添加到集合列表
-  collections.value.push(collection);
-  // 这里可以添加保存到后端的逻辑
+async function addCollection(collection) {
+  try {
+    // 调用后端接口创建集合
+    await CreateCollection(collection);
+    // 将新集合添加到集合列表
+    collections.value.push(collection);
+  } catch (error) {
+    console.error('创建集合失败:', error);
+    alert('创建集合失败: ' + error.message);
+  }
 }
 
 // 新增标签
-function addTag(tag) {
-  // 将新标签添加到标签列表
-  tags.value.push(tag);
-  // 这里可以添加保存到后端的逻辑
+async function addTag(tag) {
+  try {
+    // 调用后端接口创建标签
+    await CreateTag(tag);
+    // 将新标签添加到标签列表
+    tags.value.push(tag);
+  } catch (error) {
+    console.error('创建标签失败:', error);
+    alert('创建标签失败: ' + error.message);
+  }
 }
 
 // 编辑项目

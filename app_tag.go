@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -11,7 +12,7 @@ type Tag struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	SearchCount int        `json:"searchCount"`
-	Os          OS         `json:"os"`
+	Os          []OS       `json:"os"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
 	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
@@ -19,13 +20,26 @@ type Tag struct {
 
 // CreateTag 创建标签
 func (a *App) CreateTag(tag *Tag) error {
-
+	log.Printf("CreateTag: %+v\n", tag)
+	// 输入验证
+	if tag.Name == "" {
+		return fmt.Errorf("标签名称不能为空")
+	}
+	err := CreateTagSQLite(tag)
+	if err != nil {
+		return fmt.Errorf("创建标签失败: %v", err)
+	}
 	return nil
 }
 
 // GetTag 获取单个标签
 func (a *App) GetTag(id uint64) (*Tag, error) {
-	return nil, fmt.Errorf("tag not found: %d", id)
+	log.Printf("GetTag: %d\n", id)
+	tag, err := GetTagSQLite(id)
+	if err != nil {
+		return nil, fmt.Errorf("获取标签失败: %v", err)
+	}
+	return tag, nil
 }
 
 func (a *App) GetCommandsByTagId(option Option) []*Command {
@@ -35,6 +49,7 @@ func (a *App) GetCommandsByTagId(option Option) []*Command {
 
 // UpdateTag 更新标签
 func (a *App) UpdateTag(tag *Tag) error {
+	log.Printf("UpdateTag: %+v\n", tag)
 	// 检查标签是否存在
 	for _, t := range a.tags {
 		if t.ID == tag.ID && t.DeletedAt == nil {

@@ -11,7 +11,7 @@ type Collection struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	SearchCount int        `json:"searchCount"`
-	Os          OS         `json:"os"`
+	Os          []OS       `json:"os"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
 	DeletedAt   *time.Time `json:"deletedAt,omitempty"`

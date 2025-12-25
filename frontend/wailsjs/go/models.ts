@@ -5,7 +5,7 @@ export namespace main {
 	    name: string;
 	    description: string;
 	    searchCount: number;
-	    os: string;
+	    os: string[];
 	    // Go type: time
 	    createdAt: any;
 	    // Go type: time
@@ -161,7 +161,7 @@ export namespace main {
 	    name: string;
 	    description: string;
 	    searchCount: number;
-	    os: string;
+	    os: string[];
 	    // Go type: time
 	    createdAt: any;
 	    // Go type: time

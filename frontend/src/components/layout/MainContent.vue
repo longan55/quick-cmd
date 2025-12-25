@@ -95,15 +95,19 @@
         </div>
         
         <div class="form-group">
-          <label>所属集合</label>
-          <div class="collection-selector">
-            <label v-for="collection in collections" :key="collection.id" class="collection-option">
-              <input 
-                type="checkbox" 
-                :value="collection.id" 
-                v-model="newCommand.collections"
-              />
-              <span>{{ collection.name }}</span>
+          <label>适用系统</label>
+          <div class="system-selector">
+            <label class="system-option">
+              <input type="checkbox" value="windows" v-model="newCollection.systemType" />
+              <span>Windows</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="linux" v-model="newCollection.systemType" />
+              <span>Linux</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="mac" v-model="newCollection.systemType" />
+              <span>Mac</span>
             </label>
           </div>
         </div>
@@ -127,10 +131,29 @@
           <label for="tag-name">标签名称</label>
           <input type="text" id="tag-name" v-model="newTag.name" placeholder="请输入标签名称" />
         </div>
+      
         
         <div class="form-group">
           <label for="tag-description">标签描述</label>
           <textarea id="tag-description" v-model="newTag.description" placeholder="请输入标签描述" rows="2"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>适用系统</label>
+          <div class="system-selector">
+            <label class="system-option">
+              <input type="checkbox" value="windows" v-model="newTag.systemType" />
+              <span>Windows</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="linux" v-model="newTag.systemType" />
+              <span>Linux</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="mac" v-model="newTag.systemType" />
+              <span>Mac</span>
+            </label>
+          </div>
         </div>
         
         <div class="form-actions">
@@ -298,14 +321,16 @@ const newCollection = ref({
   id: '',
   name: '',
   description: '',
-  sortValue: 0
+  sortValue: 0,
+  systemType: []
 });
 
 const newTag = ref({
   id: '',
   name: '',
   description: '',
-  sortValue: 0
+  sortValue: 0,
+  systemType: []
 });
 
 // 计算属性：根据搜索关键词过滤命令
@@ -375,8 +400,14 @@ function saveCollection() {
     return;
   }
   
-  newCollection.value.id = generateUUID();
-  emit('add-collection', { ...newCollection.value });
+  // 构造符合后端Collection结构体的数据
+  const collectionData = {
+    name: newCollection.value.name,
+    description: newCollection.value.description,
+    os: newCollection.value.systemType
+  };
+  
+  emit('add-collection', collectionData);
   
   // 重置表单并关闭界面
   resetCollectionForm();
@@ -390,8 +421,15 @@ function saveTag() {
     return;
   }
   
-  newTag.value.id = generateUUID();
-  emit('add-tag', { ...newTag.value });
+  // 构造符合后端Tag结构体的数据
+  const tagData = {
+    name: newTag.value.name,
+    description: newTag.value.description,
+    searchCount: 0,
+    os: newTag.value.systemType
+  };
+  
+  emit('add-tag', tagData);
   
   // 重置表单并关闭界面
   resetTagForm();
@@ -418,7 +456,8 @@ function resetCollectionForm() {
     id: '',
     name: '',
     description: '',
-    sortValue: 0
+    sortValue: 0,
+    systemType: []
   };
 }
 
@@ -427,7 +466,8 @@ function resetTagForm() {
     id: '',
     name: '',
     description: '',
-    sortValue: 0
+    sortValue: 0,
+    systemType: []
   };
 }
 </script>

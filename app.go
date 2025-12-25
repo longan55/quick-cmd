@@ -74,10 +74,27 @@ func (a *App) GetOptions(option Option) Response {
 func getTagsOptions(option Option) Response {
 	// 这里应该根据option参数查询数据库获取标签列表
 	// 目前返回空列表，后续需要实现具体逻辑
+
+	tags, err := GetTagsSQLite(option)
+	if err != nil {
+		return Response{
+			Tags:        []*Tag{},
+			Collections: []*Collection{},
+			Commands:    []*Command{},
+		}
+	}
+	commands, err := GetCommandsSQLite(option)
+	if err != nil {
+		return Response{
+			Tags:        tags,
+			Collections: []*Collection{},
+			Commands:    []*Command{},
+		}
+	}
 	return Response{
-		Tags:        []*Tag{},
+		Tags:        tags,
 		Collections: []*Collection{},
-		Commands:    []*Command{},
+		Commands:    commands,
 	}
 }
 
