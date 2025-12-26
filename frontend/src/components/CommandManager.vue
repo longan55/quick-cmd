@@ -149,56 +149,29 @@ const newTag = ref({
   sortValue: 0      // 排序值
 });
 
-// 模拟数据 - 标签列表
+// // 模拟数据 - 标签列表
 const tags = ref([
-  { id: '1', name: '开发', description: '开发相关指令', sortValue: 1 },
-  { id: '2', name: '运维', description: '运维相关指令', sortValue: 2 },
-  { id: '3', name: '测试', description: '测试相关指令', sortValue: 3 },
-  { id: '4', name: '数据库', description: '数据库相关指令', sortValue: 4 },
-  { id: '5', name: '网络', description: '网络相关指令', sortValue: 5 }
+  { id: 0, name: '全部标签', description: '开发相关指令',icon: '🏷️' },
 ]);
 
-// 模拟数据 - 集合列表
+// // 模拟数据 - 集合列表
 const collections = ref([
-  { id: '1', name: '常用命令', description: '常用的命令集合', sortValue: 1 },
-  { id: '2', name: 'Git命令', description: 'Git版本控制相关命令', sortValue: 2 },
-  { id: '3', name: 'Docker命令', description: 'Docker容器相关命令', sortValue: 3 },
-  { id: '4', name: 'Linux命令', description: 'Linux系统相关命令', sortValue: 4 },
-  { id: '5', name: 'Windows命令', description: 'Windows系统相关命令', sortValue: 5 }
+  
 ]);
 
-// 模拟数据 - 命令列表（当前注释掉，使用后端API获取）
+// // 模拟数据 - 命令列表（当前注释掉，使用后端API获取）
 const commands = ref([]);
 
 // 模拟菜单项数据
 const menuItems = ref({
-  topMenu: [  // 顶部菜单
-    { id: 'home', name: '首页', icon: '🏠' },
-    { id: 'commands', name: '命令管理', icon: '⚡' },
-    { id: 'collections', name: '集合管理', icon: '📁' },
-    { id: 'tags', name: '标签管理', icon: '🏷️' }
-  ],
   tags: [     // 标签菜单
-    { id: 'all-tags', name: '全部标签', icon: '🏷️' },
-    { id: 'dev', name: '开发', icon: '💻' },
-    { id: 'ops', name: '运维', icon: '🔧' },
-    { id: 'test', name: '测试', icon: '🧪' },
-    { id: 'db', name: '数据库', icon: '🗃️' },
-    { id: 'network', name: '网络', icon: '🌐' }
+    { id: 0, name: '全部标签', icon: '🏷️' },
   ],
   collections: [  // 集合菜单
-    { id: 'all-collections', name: '全部集合', icon: '📁' },
-    { id: 'common', name: '常用命令', icon: '⭐' },
-    { id: 'git', name: 'Git命令', icon: '🔖' },
-    { id: 'docker', name: 'Docker命令', icon: '🐳' },
-    { id: 'linux', name: 'Linux命令', icon: '🐧' },
-    { id: 'windows', name: 'Windows命令', icon: '🪟' }
+    { id: 0, name: '全部集合', icon: '📁' },
   ],
   all: [     // 全部命令菜单
-    { id: 'all-commands', name: '全部命令', icon: '⚡' },
-    { id: 'recent', name: '最近使用', icon: '🕒' },
-    { id: 'frequent', name: '高频使用', icon: '🔥' },
-    { id: 'newest', name: '最新添加', icon: '🆕' }
+    { id: 0, name: '全部命令', icon: '⚡' },
   ]
 });
 
@@ -250,18 +223,41 @@ function toggleActiveMenu(menuId) {
   };
   
   // 调用GetOptions获取数据
-  GetOptions(option).then((result) => {
+  getOptionAndHandle(option)
+}
+
+function getOptionAndHandle(option){
+  //menuItems.topMenu
+    // 调用GetOptions获取数据
+    GetOptions(option).then((result) => {
     console.log("获取数据成功:", result);
     
-    // 更新数据
-    if (result.tags) {
-      tags.value = result.tags;
-    }
-    if (result.collections) {
-      collections.value = result.collections;
-    }
-    if (result.options) {
-      commands.value = result.options;
+    // 更新数据 - 使用统一的数据更新逻辑
+    if (result.data) {
+      // 如果有 data 字段，从 data 中获取
+      if (result.data.tags) {
+        tags.value = result.data.tags;
+      }
+      if (result.data.collections) {
+        collections.value = result.data.collections;
+      }
+      if (result.data.commands) {
+        commands.value = result.data.commands;
+      }
+    } else {
+      // 如果没有 data 字段，直接从根级别获取
+      if (result.tags) {
+        tags.value = result.tags;
+      }
+      if (result.collections) {
+        collections.value = result.collections;
+      }
+      if (result.options) {
+        commands.value = result.options;
+      }
+      if (result.commands) {
+        commands.value = result.commands;
+      }
     }
   }).catch((error) => {
     console.error("获取数据失败:", error);
@@ -289,22 +285,7 @@ function toggleSystemType(type) {
     Sort: buildSortParams()
   };
   
-  GetOptions(option).then((result) => {
-    console.log("获取数据成功:", result);
-    
-    // 更新数据
-    if (result.tags) {
-      tags.value = result.tags;
-    }
-    if (result.collections) {
-      collections.value = result.collections;
-    }
-    if (result.options) {
-      commands.value = result.options;
-    }
-  }).catch((error) => {
-    console.error("获取数据失败:", error);
-  });
+  getOptionAndHandle(option);
 }
 
 // 切换排序下拉框
@@ -474,22 +455,7 @@ onMounted(() => {
   };
   
   // 调用GetOptions获取初始数据
-  GetOptions(option).then((result) => {
-    console.log("获取初始数据成功:", result);
-    
-    // 更新数据
-    if (result.tags) {
-      tags.value = result.tags;
-    }
-    if (result.collections) {
-      collections.value = result.collections;
-    }
-    if (result.options) {
-      commands.value = result.options;
-    }
-  }).catch((error) => {
-    console.error("获取初始数据失败:", error);
-  });
+  getOptionAndHandle(option);
 });
 
 // 组件卸载时
@@ -510,22 +476,7 @@ watch(() => menuType.value, () => {
   };
   
   // 调用GetOptions获取数据
-  GetOptions(option).then((result) => {
-    console.log("获取数据成功:", result);
-    
-    // 更新数据
-    if (result.tags) {
-      tags.value = result.tags;
-    }
-    if (result.collections) {
-      collections.value = result.collections;
-    }
-    if (result.options) {
-      commands.value = result.options;
-    }
-  }).catch((error) => {
-    console.error("获取数据失败:", error);
-  });
+  getOptionAndHandle(option);
 });
 
 // 监听搜索关键词变化

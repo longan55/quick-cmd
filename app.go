@@ -3,16 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 )
 
-type OS string
-
 const (
-	Windows OS = "windows"
-	Mac     OS = "mac"
-	Linux   OS = "linux"
-	NoneOs  OS = ""
-	AllOs   OS = "all"
+	Windows string = "windows"
+	Mac     string = "mac"
+	Linux   string = "linux"
+	NoneOs  string = ""
+	AllOs   string = "all"
 )
 
 // App struct
@@ -45,7 +44,7 @@ func (a *App) GetMenuItems() map[string]interface{} {
 
 type Option struct {
 	Name string     `json:"name"`
-	Os   []OS       `json:"os"`
+	Os   []string   `json:"os"`
 	Type string     `json:"type"` //command,tag,collection
 	ID   uint64     `json:"id"`
 	Sort SortOption `json:"sort"`
@@ -58,67 +57,81 @@ type SortOption struct {
 	// SortValue  *string `json:"sort_value"`
 }
 
-func (a *App) GetOptions(option Option) Response {
+func (a *App) GetOptions(option Option) (response Response) {
 	fmt.Printf("GetOptions: %+v\n", option)
 	switch option.Type {
-	case "command":
-		return getCommandsOptions(option)
-	case "tag":
-		return getTagsOptions(option)
-	case "collection":
-		return getCollectionsOptions(option)
+	case "commands":
+		log.Printf("GetCommandsOptions")
+		response.Data = getCommandsOptions(option)
+	case "tags":
+		log.Printf("GetTagsOptions")
+		response.Data = getTagsOptions(option)
+	case "collections":
+		log.Printf("GetCollectionsOptions")
+		response.Data = getCollectionsOptions(option)
 	}
-	return Response{}
+	fmt.Printf("response: %+v\n", response)
+	fmt.Printf("response.data.tags: %+v\n", response.Data.(AllCommands).Tags)
+	fmt.Printf("response.data.collections: %+v\n", response.Data.(AllCommands).Collections)
+	fmt.Printf("response.data.commands: %+v\n", response.Data.(AllCommands).Commands)
+	return response
 }
 
-func getTagsOptions(option Option) Response {
+func getTagsOptions(option Option) AllCommands {
 	// 这里应该根据option参数查询数据库获取标签列表
 	// 目前返回空列表，后续需要实现具体逻辑
 
 	tags, err := GetTagsSQLite(option)
 	if err != nil {
-		return Response{
+		log.Printf("GetTagsSQLite failed: %v", err)
+		return AllCommands{
 			Tags:        []*Tag{},
 			Collections: []*Collection{},
 			Commands:    []*Command{},
 		}
 	}
-	commands, err := GetCommandsSQLite(option)
+	// commands := make([]*Command, 0, 64)
+	tagIDs := make([]uint64, 0, len(tags))
+	for _, tag := range tags {
+		tagIDs = append(tagIDs, tag.ID)
+	}
+	commands, err := GetCommandsByTagIDs(tagIDs)
 	if err != nil {
-		return Response{
+		log.Printf("GetCommandsByTagIDs failed: %v", err)
+		return AllCommands{
 			Tags:        tags,
 			Collections: []*Collection{},
-			Commands:    []*Command{},
+			Commands:    commands,
 		}
 	}
-	return Response{
+	return AllCommands{
 		Tags:        tags,
 		Collections: []*Collection{},
 		Commands:    commands,
 	}
 }
 
-func getCollectionsOptions(option Option) Response {
+func getCollectionsOptions(option Option) AllCommands {
 	// 这里应该根据option参数查询数据库获取集合列表
 	// 目前返回空列表，后续需要实现具体逻辑
-	return Response{
+	return AllCommands{
 		Tags:        []*Tag{},
 		Collections: []*Collection{},
 		Commands:    []*Command{},
 	}
 }
 
-func getCommandsOptions(option Option) Response {
+func getCommandsOptions(option Option) AllCommands {
 	// 这里应该根据option参数查询数据库获取命令列表
 	// 目前返回空列表，后续需要实现具体逻辑
-	return Response{
+	return AllCommands{
 		Tags:        []*Tag{},
 		Collections: []*Collection{},
 		Commands:    []*Command{},
 	}
 }
 
-type Response struct {
+type AllCommands struct {
 	Tags        []*Tag        `json:"tags"`
 	Collections []*Collection `json:"collections"`
 	Commands    []*Command    `json:"options"`

@@ -54,7 +54,7 @@ export namespace main {
 	    description: string;
 	    copyCount: number;
 	    searchCount: number;
-	    os: string;
+	    os: string[];
 	    tagIDs: number[];
 	    collectionIDs: number[];
 	    // Go type: time
@@ -156,57 +156,10 @@ export namespace main {
 		    return a;
 		}
 	}
-	export class Tag {
-	    id: number;
-	    name: string;
-	    description: string;
-	    searchCount: number;
-	    os: string[];
-	    // Go type: time
-	    createdAt: any;
-	    // Go type: time
-	    updatedAt: any;
-	    // Go type: time
-	    deletedAt?: any;
-	
-	    static createFrom(source: any = {}) {
-	        return new Tag(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.name = source["name"];
-	        this.description = source["description"];
-	        this.searchCount = source["searchCount"];
-	        this.os = source["os"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
-	        this.deletedAt = this.convertValues(source["deletedAt"], null);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class Response {
-	    tags: Tag[];
-	    collections: Collection[];
-	    options: Command[];
+	    code: number;
+	    msg: string;
+	    data: any;
 	
 	    static createFrom(source: any = {}) {
 	        return new Response(source);
@@ -214,28 +167,10 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.tags = this.convertValues(source["tags"], Tag);
-	        this.collections = this.convertValues(source["collections"], Collection);
-	        this.options = this.convertValues(source["options"], Command);
+	        this.code = source["code"];
+	        this.msg = source["msg"];
+	        this.data = source["data"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class SortIndex {
 	    creatTimeAsc: boolean;
@@ -270,6 +205,53 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.os = source["os"];
 	        this.sortIndex = this.convertValues(source["sortIndex"], SortIndex);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Tag {
+	    id: number;
+	    name: string;
+	    description: string;
+	    searchCount: number;
+	    os: string[];
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	    // Go type: time
+	    deletedAt?: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Tag(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.searchCount = source["searchCount"];
+	        this.os = source["os"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.deletedAt = this.convertValues(source["deletedAt"], null);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

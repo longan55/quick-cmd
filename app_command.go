@@ -12,7 +12,7 @@ type Command struct {
 	Description   string     `json:"description"`
 	CopyCounts    int        `json:"copyCount"`
 	SearchCount   int        `json:"searchCount"`
-	Os            OS         `json:"os"`
+	Os            []string   `json:"os"`
 	TagIDs        []uint64   `json:"tagIDs"`        // 标签ID列表
 	CollectionIDs []uint64   `json:"collectionIDs"` // 集合ID列表
 	CreatedAt     time.Time  `json:"createdAt"`
@@ -46,4 +46,3 @@ func (a *App) DeleteCommand(id uint64) error {
 
 	return nil
 }
-

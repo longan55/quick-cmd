@@ -2,7 +2,7 @@ package main
 
 // Status 保存应用初始状态
 type Status struct {
-	Os        []OS      `json:"os"`
+	Os        []string  `json:"os"`
 	SortIndex SortIndex `json:"sortIndex"`
 }
 
@@ -17,7 +17,7 @@ type SortIndex struct {
 
 func (a *App) GetStatus() *Status {
 	return &Status{
-		Os: []OS{
+		Os: []string{
 			Linux,
 		},
 		SortIndex: SortIndex{

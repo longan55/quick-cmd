@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -28,7 +29,7 @@ func InitSqlite() {
 		panic(err)
 	}
 	DB = db
-
+	DB.SetMaxOpenConns(1)
 	// 创建所有必需的表
 	if err := createTables(); err != nil {
 		panic(fmt.Errorf("创建表失败: %v", err))
@@ -45,7 +46,6 @@ func createTables() error {
 		name TEXT NOT NULL,
 		description TEXT,
 		search_count INTEGER DEFAULT 0,
-		os TEXT NOT NULL,
 		created_at DATETIME NOT NULL,
 		updated_at DATETIME NOT NULL,
 		deleted_at DATETIME
@@ -64,7 +64,6 @@ func createTables() error {
 		name TEXT NOT NULL,
 		description TEXT,
 		search_count INTEGER DEFAULT 0,
-		os TEXT NOT NULL,
 		created_at DATETIME NOT NULL,
 		updated_at DATETIME NOT NULL,
 		deleted_at DATETIME
@@ -85,7 +84,6 @@ func createTables() error {
 		description TEXT,
 		copy_count INTEGER DEFAULT 0,
 		search_count INTEGER DEFAULT 0,
-		os INTEGER NOT NULL,
 		created_at DATETIME NOT NULL,
 		updated_at DATETIME NOT NULL,
 		deleted_at DATETIME
@@ -125,11 +123,201 @@ func createTables() error {
 		return fmt.Errorf("创建command_collections表失败: %v", err)
 	}
 
+	// 创建标签与OS的关联表
+	_, err = DB.Exec(`
+	CREATE TABLE IF NOT EXISTS tag_os (
+		tag_id INTEGER NOT NULL,
+		os TEXT NOT NULL,
+		PRIMARY KEY (tag_id, os),
+		FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+	);
+	`)
+	if err != nil {
+		return fmt.Errorf("创建tag_os表失败: %v", err)
+	} else {
+		log.Println("tag_os表创建成功")
+	}
+
+	// 创建集合与OS的关联表
+	_, err = DB.Exec(`
+	CREATE TABLE IF NOT EXISTS collection_os (
+		collection_id INTEGER NOT NULL,
+		os TEXT NOT NULL,
+		PRIMARY KEY (collection_id, os),
+		FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+	);
+	`)
+	if err != nil {
+		return fmt.Errorf("创建collection_os表失败: %v", err)
+	} else {
+		log.Println("collection_os表创建成功")
+	}
+
+	// 创建命令与OS的关联表
+	_, err = DB.Exec(`
+	CREATE TABLE IF NOT EXISTS command_os (
+		command_id INTEGER NOT NULL,
+		os TEXT NOT NULL,
+		PRIMARY KEY (command_id, os),
+		FOREIGN KEY (command_id) REFERENCES commands(id) ON DELETE CASCADE
+	);
+	`)
+	if err != nil {
+		return fmt.Errorf("创建command_os表失败: %v", err)
+	} else {
+		log.Println("command_os表创建成功")
+	}
+
+	// 为OS关联表创建索引，提高查询性能
+	_, err = DB.Exec(`CREATE INDEX IF NOT EXISTS idx_tag_os_os ON tag_os(os)`)
+	if err != nil {
+		log.Printf("创建tag_os索引失败: %v", err)
+	}
+
+	_, err = DB.Exec(`CREATE INDEX IF NOT EXISTS idx_collection_os_os ON collection_os(os)`)
+	if err != nil {
+		log.Printf("创建collection_os索引失败: %v", err)
+	}
+
+	_, err = DB.Exec(`CREATE INDEX IF NOT EXISTS idx_command_os_os ON command_os(os)`)
+	if err != nil {
+		log.Printf("创建command_os索引失败: %v", err)
+	}
+
 	return nil
+}
+
+// 辅助函数：处理OS关联表的操作
+
+// AddOSToTagSQLite 为标签添加OS
+func AddOSToTagSQLite(tx *sql.Tx, tagID uint64, os string) error {
+	_, err := tx.Exec(
+		"INSERT OR IGNORE INTO tag_os (tag_id, os) VALUES (?, ?)",
+		tagID, os,
+	)
+	return err
+}
+
+// RemoveAllOSFromTagSQLite 从标签移除所有OS
+func RemoveAllOSFromTagSQLite(tagID uint64) error {
+	_, err := DB.Exec(
+		"DELETE FROM tag_os WHERE tag_id = ?",
+		tagID,
+	)
+	return err
+}
+
+// GetTagOSsSQLite 获取标签的所有OS
+func GetTagOSsSQLite(tagID uint64) ([]string, error) {
+	var osList []string
+	rows, err := DB.Query(
+		"SELECT os FROM tag_os WHERE tag_id = ?",
+		tagID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var os string
+		err := rows.Scan(&os)
+		if err != nil {
+			return nil, err
+		}
+		osList = append(osList, os)
+	}
+
+	return osList, nil
+}
+
+// AddOSToCollectionSQLite 为集合添加OS
+func AddOSToCollectionSQLite(collectionID uint64, os string) error {
+	_, err := DB.Exec(
+		"INSERT OR IGNORE INTO collection_os (collection_id, os) VALUES (?, ?)",
+		collectionID, os,
+	)
+	return err
+}
+
+// RemoveAllOSFromCollectionSQLite 从集合移除所有OS
+func RemoveAllOSFromCollectionSQLite(collectionID uint64) error {
+	_, err := DB.Exec(
+		"DELETE FROM collection_os WHERE collection_id = ?",
+		collectionID,
+	)
+	return err
+}
+
+// GetCollectionOSsSQLite 获取集合的所有OS
+func GetCollectionOSsSQLite(collectionID uint64) ([]string, error) {
+	var osList []string
+	rows, err := DB.Query(
+		"SELECT os FROM collection_os WHERE collection_id = ?",
+		collectionID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var os string
+		err := rows.Scan(&os)
+		if err != nil {
+			return nil, err
+		}
+		osList = append(osList, os)
+	}
+
+	return osList, nil
+}
+
+// AddOSToCommandSQLite 为命令添加OS
+func AddOSToCommandSQLite(commandID uint64, os string) error {
+	_, err := DB.Exec(
+		"INSERT OR IGNORE INTO command_os (command_id, os) VALUES (?, ?)",
+		commandID, os,
+	)
+	return err
+}
+
+// RemoveAllOSFromCommandSQLite 从命令移除所有OS
+func RemoveAllOSFromCommandSQLite(commandID uint64) error {
+	_, err := DB.Exec(
+		"DELETE FROM command_os WHERE command_id = ?",
+		commandID,
+	)
+	return err
+}
+
+// GetCommandOSsSQLite 获取命令的所有OS
+func GetCommandOSsSQLite(commandID uint64) ([]string, error) {
+	var osList []string
+	rows, err := DB.Query(
+		"SELECT os FROM command_os WHERE command_id = ?",
+		commandID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var os string
+		err := rows.Scan(&os)
+		if err != nil {
+			return nil, err
+		}
+		osList = append(osList, os)
+	}
+
+	return osList, nil
 }
 
 // CreateTagSQLite 创建标签
 func CreateTagSQLite(tag *Tag) error {
+	log.Printf("CreateTagSQLite: %+v", tag)
 	now := time.Now()
 	tag.CreatedAt = now
 	tag.UpdatedAt = now
@@ -139,34 +327,52 @@ func CreateTagSQLite(tag *Tag) error {
 	var exists bool
 	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM tags WHERE name = ? AND deleted_at IS NULL)", tag.Name).Scan(&exists)
 	if err != nil {
+		log.Printf("检查标签是否存在失败: %v", err)
 		return fmt.Errorf("检查标签是否存在失败: %v", err)
 	}
 	if exists {
+		log.Printf("标签[%s]已存在", tag.Name)
 		return fmt.Errorf("标签[%s]已存在", tag.Name)
 	}
 
-	// 将[]OS转换为JSON字符串
-	osJSON, err := json.Marshal(tag.Os)
+	// 开启事务，创建tag和tag_os关联关系
+	tx, err := DB.Begin()
 	if err != nil {
-		return fmt.Errorf("转换OS字段失败: %v", err)
+		log.Printf("开启事务失败: %v", err)
+		return fmt.Errorf("开启事务失败: %v", err)
 	}
+	// defer
 
-	// 保存到SQLite数据库，不指定id字段，让SQLite自动生成
-	result, err := DB.Exec(
-		"INSERT INTO tags (name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		tag.Name, tag.Description, tag.SearchCount, string(osJSON), tag.CreatedAt, tag.UpdatedAt, tag.DeletedAt,
+	result, err := tx.Exec(
+		"INSERT INTO tags (name, description, search_count, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?)",
+		tag.Name, tag.Description, tag.SearchCount, tag.CreatedAt, tag.UpdatedAt, tag.DeletedAt,
 	)
 	if err != nil {
+		log.Printf("创建标签失败: %v", err)
+		tx.Rollback()
 		return fmt.Errorf("创建标签失败: %v", err)
 	}
-
+	log.Printf("更新tags表成功: %+v", tag)
 	// 获取SQLite自动生成的ID
 	id, err := result.LastInsertId()
 	if err != nil {
+		log.Printf("获取标签ID失败: %v", err)
 		return fmt.Errorf("获取标签ID失败: %v", err)
 	}
 	tag.ID = uint64(id)
-
+	log.Printf("标签ID: %d", tag.ID)
+	// 2. 保存OS关联关系
+	for i, os := range tag.Os {
+		log.Printf("添加标签OS关系%d: %s", i, os)
+		if err = AddOSToTagSQLite(tx, tag.ID, os); err != nil {
+			log.Printf("添加标签OS关系失败: %v", err)
+			tx.Rollback()
+			return fmt.Errorf("添加标签OS关系失败: %v", err)
+		}
+		log.Printf("更新tag_os关系成功: %s", os)
+	}
+	log.Printf("创建标签成功: %+v", tag)
+	tx.Commit()
 	return nil
 }
 
@@ -179,14 +385,14 @@ func GetTagSQLite(id uint64) (*Tag, error) {
 
 	var tag Tag
 	var deletedAt sql.NullTime
-	var osJSON string
+	var osString string
 
 	// 使用参数化查询，防止SQL注入
 	err := DB.QueryRow(
 		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM tags WHERE id = ? AND deleted_at IS NULL",
 		id,
 	).Scan(
-		&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &osJSON, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
+		&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &osString, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -195,9 +401,9 @@ func GetTagSQLite(id uint64) (*Tag, error) {
 		return nil, fmt.Errorf("获取标签失败: %v", err)
 	}
 
-	// 将JSON字符串转换为[]OS类型
-	if err := json.Unmarshal([]byte(osJSON), &tag.Os); err != nil {
-		return nil, fmt.Errorf("解析OS字段失败: %v", err)
+	// 从关联表获取OS信息
+	if tag.Os, err = GetTagOSsSQLite(id); err != nil {
+		return nil, fmt.Errorf("获取标签OS失败: %v", err)
 	}
 
 	// 处理deletedAt字段
@@ -211,48 +417,80 @@ func GetTagSQLite(id uint64) (*Tag, error) {
 // GetTagsSQLite 获取所有标签
 func GetTagsSQLite(option Option) ([]*Tag, error) {
 	var tags []*Tag
-	// 构建查询条件
-	query := "SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM tags WHERE deleted_at IS NULL"
-	args := []interface{}{}
+	var query string
+	var args []interface{}
 
-	// 添加OS条件
-	if option.Os != nil && len(option.Os) > 0 {
-		query += " AND os IN (?)"
-		args = append(args, option.Os)
+	// 构建查询条件
+	if len(option.Os) > 0 {
+		// 如果有OS条件，使用JOIN查询关联表
+		query = `
+			SELECT DISTINCT t.id, t.name, t.description, t.search_count, t.created_at, t.updated_at, t.deleted_at
+			FROM tags t RIGHT JOIN tag_os tos 
+			ON t.id = tos.tag_id
+			WHERE t.deleted_at IS NULL
+		`
+	} else {
+		// 没有OS条件，直接查询tags表
+		query = "SELECT DISTINCT t.id, t.name, t.description, t.search_count, t.created_at, t.updated_at, t.deleted_at FROM tags AS t WHERE t.deleted_at IS NULL"
 	}
+
 	if option.Name != "" {
-		query += " AND name LIKE ?"
+		query += " AND t.name LIKE ?"
 		args = append(args, "%"+option.Name+"%")
 	}
 	if option.ID != 0 {
-		query += " AND id = ?"
+		query += " AND t.id = ?"
 		args = append(args, option.ID)
 	}
+	if len(option.Os) > 0 {
+		// 转换OS切片为SQLite IN 子句的参数
+		// for _, os := range option.Os {
+		// 	query += fmt.Sprintf(" AND tos.os = '%s' ", os)
+		// }
+		args, err := SQL_Slice_To_In_Args(option.Os)
+		if err != nil {
+			return nil, fmt.Errorf("转换OS切片为SQLite IN 子句参数失败: %v", err)
+		}
+		query += fmt.Sprintf(" AND tos.os IN %s", args)
+	}
+
+	query += " ORDER BY t.created_at DESC"
+
+	log.Printf("SQL: %s,args:%v", query, args)
+	stmt, err := DB.Prepare(query)
+	if err != nil {
+		log.Printf("准备查询语句失败: %v", err)
+		return nil, fmt.Errorf("准备查询语句失败: %v", err)
+	}
+	defer stmt.Close()
 
 	// 从SQLite数据库获取所有标签
-	rows, err := DB.Query(query, args...)
+	rows, err := stmt.Query(args...)
 	if err != nil {
+		log.Printf("执行查询语句失败: %v", err)
 		return nil, fmt.Errorf("获取标签列表失败: %v", err)
 	}
 	defer rows.Close()
-
+	log.Printf("查询标签列表成功: %+v", rows)
 	// 遍历结果集
 	for rows.Next() {
 		var tag Tag
 		var deletedAt sql.NullTime
-		var osJSON string
+		// var osString string
 
-		err := rows.Scan(
-			&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &osJSON, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
+		err = rows.Scan(
+			&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
 		)
 		if err != nil {
+			log.Printf("扫描标签失败: %v", err)
 			return nil, fmt.Errorf("扫描标签失败: %v", err)
 		}
 
-		// 将JSON字符串转换为[]OS类型
-		if err := json.Unmarshal([]byte(osJSON), &tag.Os); err != nil {
-			return nil, fmt.Errorf("解析OS字段失败: %v", err)
-		}
+		// 从关联表获取OS信息
+		// if tag.Os, err = GetTagOSsSQLite(tag.ID); err != nil {
+		// 	log.Printf("获取标签OS失败: %v", err)
+		// 	return nil, fmt.Errorf("获取标签OS失败: %v", err)
+		// }
 
 		// 处理deletedAt字段
 		if deletedAt.Valid {
@@ -263,9 +501,10 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 	}
 
 	if err = rows.Err(); err != nil {
+		log.Printf("遍历标签结果集失败: %v", err)
 		return nil, fmt.Errorf("遍历标签结果集失败: %v", err)
 	}
-
+	log.Printf("获取标签列表成功: %+v\n", tags)
 	return tags, nil
 }
 
@@ -273,20 +512,26 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 func UpdateTagSQLite(tag *Tag) error {
 	tag.UpdatedAt = time.Now()
 
-	// 将[]OS转换为JSON字符串
-	osJSON, err := json.Marshal(tag.Os)
-	if err != nil {
-		return fmt.Errorf("转换OS字段失败: %v", err)
-	}
-
 	// 更新SQLite数据库中的标签
-	_, err = DB.Exec(
+	_, err := DB.Exec(
 		"UPDATE tags SET name = ?, description = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		tag.Name, tag.Description, tag.SearchCount, string(osJSON), tag.UpdatedAt, tag.ID,
+		tag.Name, tag.Description, tag.SearchCount, "", tag.UpdatedAt, tag.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("更新标签失败: %v", err)
 	}
+
+	// 先删除现有的OS关系
+	if err := RemoveAllOSFromTagSQLite(tag.ID); err != nil {
+		return fmt.Errorf("删除标签OS关系失败: %v", err)
+	}
+
+	// 重新添加OS关系
+	// for _, os := range tag.Os {
+	// 	if err := AddOSToTagSQLite(tag.ID, os); err != nil {
+	// 		return fmt.Errorf("添加标签OS关系失败: %v", err)
+	// 	}
+	// }
 
 	return nil
 }
@@ -324,16 +569,10 @@ func CreateCollectionSQLite(collection *Collection) error {
 	collection.UpdatedAt = now
 	collection.SearchCount = 0
 
-	// 将[]OS转换为JSON字符串
-	osJSON, err := json.Marshal(collection.Os)
-	if err != nil {
-		return fmt.Errorf("转换OS字段失败: %v", err)
-	}
-
 	// 保存到SQLite数据库，不指定id字段，让SQLite自动生成
 	result, err := DB.Exec(
 		"INSERT INTO collections (name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		collection.Name, collection.Description, collection.SearchCount, string(osJSON), collection.CreatedAt, collection.UpdatedAt, collection.DeletedAt,
+		collection.Name, collection.Description, collection.SearchCount, "", collection.CreatedAt, collection.UpdatedAt, collection.DeletedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("创建集合失败: %v", err)
@@ -346,6 +585,13 @@ func CreateCollectionSQLite(collection *Collection) error {
 	}
 	collection.ID = uint64(id)
 
+	// 保存OS关联关系
+	for _, os := range collection.Os {
+		if err := AddOSToCollectionSQLite(collection.ID, os); err != nil {
+			return fmt.Errorf("添加集合OS关系失败: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -357,7 +603,7 @@ func GetCollectionSQLite(id uint64) (*Collection, error) {
 	}
 
 	var collection Collection
-	var osJSON string
+	var osString string
 	var deletedAt sql.NullTime
 
 	// 使用参数化查询，防止SQL注入
@@ -365,7 +611,7 @@ func GetCollectionSQLite(id uint64) (*Collection, error) {
 		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM collections WHERE id = ? AND deleted_at IS NULL",
 		id,
 	).Scan(
-		&collection.ID, &collection.Name, &collection.Description, &collection.SearchCount, &osJSON, &collection.CreatedAt, &collection.UpdatedAt, &deletedAt,
+		&collection.ID, &collection.Name, &collection.Description, &collection.SearchCount, &osString, &collection.CreatedAt, &collection.UpdatedAt, &deletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -374,9 +620,9 @@ func GetCollectionSQLite(id uint64) (*Collection, error) {
 		return nil, fmt.Errorf("获取集合失败: %v", err)
 	}
 
-	// 将JSON字符串反序列化为[]OS
-	if err := json.Unmarshal([]byte(osJSON), &collection.Os); err != nil {
-		return nil, fmt.Errorf("解析OS字段失败: %v", err)
+	// 从关联表获取OS信息
+	if collection.Os, err = GetCollectionOSsSQLite(id); err != nil {
+		return nil, fmt.Errorf("获取集合OS失败: %v", err)
 	}
 
 	// 处理deletedAt字段
@@ -393,7 +639,7 @@ func GetCollectionsSQLite() ([]*Collection, error) {
 
 	// 从SQLite数据库获取所有集合
 	rows, err := DB.Query(
-		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM collections WHERE deleted_at IS NULL",
+		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM collections WHERE deleted_at IS NULL ORDER BY created_at DESC",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("获取集合列表失败: %v", err)
@@ -403,19 +649,19 @@ func GetCollectionsSQLite() ([]*Collection, error) {
 	// 遍历结果集
 	for rows.Next() {
 		var collection Collection
-		var osJSON string
+		var osString string
 		var deletedAt sql.NullTime
 
 		err := rows.Scan(
-			&collection.ID, &collection.Name, &collection.Description, &collection.SearchCount, &osJSON, &collection.CreatedAt, &collection.UpdatedAt, &deletedAt,
+			&collection.ID, &collection.Name, &collection.Description, &collection.SearchCount, &osString, &collection.CreatedAt, &collection.UpdatedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("扫描集合失败: %v", err)
 		}
 
-		// 将JSON字符串反序列化为[]OS
-		if err := json.Unmarshal([]byte(osJSON), &collection.Os); err != nil {
-			return nil, fmt.Errorf("解析OS字段失败: %v", err)
+		// 从关联表获取OS信息
+		if collection.Os, err = GetCollectionOSsSQLite(collection.ID); err != nil {
+			return nil, fmt.Errorf("获取集合OS失败: %v", err)
 		}
 
 		// 处理deletedAt字段
@@ -437,19 +683,25 @@ func GetCollectionsSQLite() ([]*Collection, error) {
 func UpdateCollectionSQLite(collection *Collection) error {
 	collection.UpdatedAt = time.Now()
 
-	// 将[]OS转换为JSON字符串
-	osJSON, err := json.Marshal(collection.Os)
-	if err != nil {
-		return fmt.Errorf("转换OS字段失败: %v", err)
-	}
-
 	// 更新SQLite数据库中的集合
-	_, err = DB.Exec(
+	_, err := DB.Exec(
 		"UPDATE collections SET name = ?, description = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		collection.Name, collection.Description, collection.SearchCount, string(osJSON), collection.UpdatedAt, collection.ID,
+		collection.Name, collection.Description, collection.SearchCount, "", collection.UpdatedAt, collection.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("更新集合失败: %v", err)
+	}
+
+	// 先删除现有的OS关系
+	if err := RemoveAllOSFromCollectionSQLite(collection.ID); err != nil {
+		return fmt.Errorf("删除集合OS关系失败: %v", err)
+	}
+
+	// 重新添加OS关系
+	for _, os := range collection.Os {
+		if err := AddOSToCollectionSQLite(collection.ID, os); err != nil {
+			return fmt.Errorf("添加集合OS关系失败: %v", err)
+		}
 	}
 
 	return nil
@@ -492,7 +744,7 @@ func CreateCommandSQLite(cmd *Command) error {
 	// 保存命令基本信息到SQLite数据库，不指定id字段，让SQLite自动生成
 	result, err := DB.Exec(
 		"INSERT INTO commands (name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, cmd.Os, cmd.CreatedAt, cmd.UpdatedAt, cmd.DeletedAt,
+		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, 0, cmd.CreatedAt, cmd.UpdatedAt, cmd.DeletedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("创建命令失败: %v", err)
@@ -519,6 +771,13 @@ func CreateCommandSQLite(cmd *Command) error {
 		}
 	}
 
+	// 保存OS关联关系
+	for _, os := range cmd.Os {
+		if err := AddOSToCommandSQLite(cmd.ID, os); err != nil {
+			return fmt.Errorf("添加命令OS关系失败: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -531,13 +790,14 @@ func GetCommandSQLite(id uint64) (*Command, error) {
 
 	var cmd Command
 	var deletedAt sql.NullTime
+	var osString string
 
 	// 使用参数化查询，防止SQL注入
 	err := DB.QueryRow(
 		"SELECT id, name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at FROM commands WHERE id = ? AND deleted_at IS NULL",
 		id,
 	).Scan(
-		&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &cmd.Os, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
+		&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &osString, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -561,7 +821,58 @@ func GetCommandSQLite(id uint64) (*Command, error) {
 		return nil, fmt.Errorf("获取命令集合ID失败: %v", err)
 	}
 
+	// 从关联表获取OS信息
+	if cmd.Os, err = GetCommandOSsSQLite(id); err != nil {
+		return nil, fmt.Errorf("获取命令OS失败: %v", err)
+	}
+
 	return &cmd, nil
+}
+
+func GetCommandsByTagIDs(ids []uint64) ([]*Command, error) {
+	if len(ids) == 0 {
+		return []*Command{}, nil
+	}
+	var commands []*Command
+	query := `
+	SELECT * FROM commands
+	INNER JOIN command_tags ct ON commands.id = ct.command_id
+	WHERE commands.deleted_at IS NULL
+	AND ct.tag_id IN %s ;
+	`
+	args, err := SQL_Slice_To_In_Args(ids)
+	if err != nil {
+		return nil, fmt.Errorf("转换ID列表为IN参数失败: %v", err)
+	}
+	log.Printf("GetCommandsByTagIDs SQL: %s", query)
+	log.Printf("GetCommandsByTagIDs args: %s", args)
+	query = fmt.Sprintf(query, args)
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("获取命令列表失败: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cmd Command
+		var deletedAt sql.NullTime
+		var osString string
+
+		err := rows.Scan(
+			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &osString, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("扫描命令失败: %v", err)
+		}
+
+		// 处理deletedAt字段
+		if deletedAt.Valid {
+			cmd.DeletedAt = &deletedAt.Time
+		}
+
+		commands = append(commands, &cmd)
+	}
+	return commands, nil
 }
 
 // GetCommandsSQLite 获取所有命令
@@ -574,9 +885,13 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 	args := []interface{}{}
 
 	// 添加OS条件
-	if option.Os != nil && len(option.Os) > 0 {
-		query += " AND os IN (?)"
-		args = append(args, option.Os)
+	if len(option.Os) > 0 {
+		osPlaceholders := make([]string, len(option.Os))
+		for i, os := range option.Os {
+			osPlaceholders[i] = "?"
+			args = append(args, os)
+		}
+		query += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM command_os co WHERE co.command_id = commands.id AND co.os IN (%s))", strings.Join(osPlaceholders, ","))
 	}
 	if option.Name != "" {
 		query += " AND name LIKE ?"
@@ -597,9 +912,10 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 	for rows.Next() {
 		var cmd Command
 		var deletedAt sql.NullTime
+		var osString string
 
 		err := rows.Scan(
-			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &cmd.Os, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
+			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &osString, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("扫描命令失败: %v", err)
@@ -618,6 +934,11 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 		// 获取命令关联的集合ID
 		if cmd.CollectionIDs, err = GetCollectionIDsByCommandIDSQLite(cmd.ID); err != nil {
 			return nil, fmt.Errorf("获取命令集合ID失败: %v", err)
+		}
+
+		// 从关联表获取OS信息
+		if cmd.Os, err = GetCommandOSsSQLite(cmd.ID); err != nil {
+			return nil, fmt.Errorf("获取命令OS失败: %v", err)
 		}
 
 		commands = append(commands, &cmd)
@@ -645,10 +966,22 @@ func UpdateCommandSQLite(cmd *Command) error {
 	// 使用参数化查询，防止SQL注入
 	_, err := DB.Exec(
 		"UPDATE commands SET name = ?, content = ?, description = ?, copy_count = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, cmd.Os, cmd.UpdatedAt, cmd.ID,
+		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, 0, cmd.UpdatedAt, cmd.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("更新命令失败: %v", err)
+	}
+
+	// 先删除现有的OS关系
+	if err := RemoveAllOSFromCommandSQLite(cmd.ID); err != nil {
+		return fmt.Errorf("删除命令OS关系失败: %v", err)
+	}
+
+	// 重新添加OS关系
+	for _, os := range cmd.Os {
+		if err := AddOSToCommandSQLite(cmd.ID, os); err != nil {
+			return fmt.Errorf("添加命令OS关系失败: %v", err)
+		}
 	}
 
 	// 先删除现有的命令与标签的关系
@@ -707,6 +1040,167 @@ func DeleteCommandSQLite(id uint64) error {
 	}
 
 	return nil
+}
+
+// 数据库迁移相关函数
+
+// MigrateOSFieldsSQLite 迁移OS字段到关联表（可选执行）
+func MigrateOSFieldsSQLite() error {
+	log.Println("开始OS字段数据迁移...")
+
+	// 1. 迁移tags表的os字段数据
+	log.Println("迁移tags表数据...")
+	rows, err := DB.Query("SELECT id, os FROM tags WHERE os IS NOT NULL AND os != '' AND deleted_at IS NULL")
+	if err != nil {
+		return fmt.Errorf("查询tags表失败: %v", err)
+	}
+	defer rows.Close()
+
+	tagCount := 0
+	for rows.Next() {
+		var tagID uint64
+		var osJSON string
+		if err := rows.Scan(&tagID, &osJSON); err != nil {
+			log.Printf("扫描tag失败: %v", err)
+			continue
+		}
+
+		// 解析JSON数据
+		var osList []string
+		if err := json.Unmarshal([]byte(osJSON), &osList); err != nil {
+			log.Printf("解析tag %d的OS数据失败: %v", tagID, err)
+			continue
+		}
+
+		// 插入到关联表
+		// for _, os := range osList {
+		// 	if err := AddOSToTagSQLite(tagID, os); err != nil {
+		// 		log.Printf("为tag %d添加OS %s失败: %v", tagID, os, err)
+		// 	}
+		// }
+		tagCount++
+	}
+
+	log.Printf("tags表迁移完成，处理了 %d 条记录", tagCount)
+
+	// 2. 迁移collections表的os字段数据
+	log.Println("迁移collections表数据...")
+	rows, err = DB.Query("SELECT id, os FROM collections WHERE os IS NOT NULL AND os != '' AND deleted_at IS NULL")
+	if err != nil {
+		return fmt.Errorf("查询collections表失败: %v", err)
+	}
+	defer rows.Close()
+
+	collectionCount := 0
+	for rows.Next() {
+		var collectionID uint64
+		var osJSON string
+		if err := rows.Scan(&collectionID, &osJSON); err != nil {
+			log.Printf("扫描collection失败: %v", err)
+			continue
+		}
+
+		// 解析JSON数据
+		var osList []string
+		if err := json.Unmarshal([]byte(osJSON), &osList); err != nil {
+			log.Printf("解析collection %d的OS数据失败: %v", collectionID, err)
+			continue
+		}
+
+		// 插入到关联表
+		for _, os := range osList {
+			if err := AddOSToCollectionSQLite(collectionID, os); err != nil {
+				log.Printf("为collection %d添加OS %s失败: %v", collectionID, os, err)
+			}
+		}
+		collectionCount++
+	}
+
+	log.Printf("collections表迁移完成，处理了 %d 条记录", collectionCount)
+
+	// 3. 迁移commands表的os字段数据（这里是整数类型）
+	log.Println("迁移commands表数据...")
+	rows, err = DB.Query("SELECT id, os FROM commands WHERE os IS NOT NULL AND os != 0 AND deleted_at IS NULL")
+	if err != nil {
+		return fmt.Errorf("查询commands表失败: %v", err)
+	}
+	defer rows.Close()
+
+	commandCount := 0
+	for rows.Next() {
+		var commandID uint64
+		var osValue int
+		if err := rows.Scan(&commandID, &osValue); err != nil {
+			log.Printf("扫描command失败: %v", err)
+			continue
+		}
+
+		// 这里需要根据实际的OS枚举值来转换
+		// 假设有一些预设的OS值映射
+		osList := getOSListByValue(osValue)
+		for _, os := range osList {
+			if err := AddOSToCommandSQLite(commandID, os); err != nil {
+				log.Printf("为command %d添加OS %s失败: %v", commandID, os, err)
+			}
+		}
+		commandCount++
+	}
+
+	log.Printf("commands表迁移完成，处理了 %d 条记录", commandCount)
+	log.Println("OS字段数据迁移完成！")
+
+	return nil
+}
+
+// CleanupOSFieldsSQLite 清理OS字段（谨慎操作）
+func CleanupOSFieldsSQLite() error {
+	log.Println("开始清理OS字段...")
+
+	// 询问用户确认
+	log.Println("警告：此操作将永久删除os字段中的数据！")
+
+	// 1. 清理tags表的os字段
+	_, err := DB.Exec("UPDATE tags SET os = '' WHERE os IS NOT NULL")
+	if err != nil {
+		return fmt.Errorf("清理tags表os字段失败: %v", err)
+	}
+	log.Println("tags表os字段已清空")
+
+	// 2. 清理collections表的os字段
+	_, err = DB.Exec("UPDATE collections SET os = '' WHERE os IS NOT NULL")
+	if err != nil {
+		return fmt.Errorf("清理collections表os字段失败: %v", err)
+	}
+	log.Println("collections表os字段已清空")
+
+	// 3. 清理commands表的os字段
+	_, err = DB.Exec("UPDATE commands SET os = 0 WHERE os IS NOT NULL")
+	if err != nil {
+		return fmt.Errorf("清理commands表os字段失败: %v", err)
+	}
+	log.Println("commands表os字段已清空")
+
+	log.Println("OS字段清理完成！")
+	return nil
+}
+
+// getOSListByValue 根据整数值获取OS列表（需要根据实际枚举值调整）
+func getOSListByValue(osValue int) []string {
+	var osList []string
+
+	// 这里需要根据实际的OS枚举值进行调整
+	// 示例：如果osValue是标志位组合
+	if osValue&1 != 0 { // 假设第1位代表Windows
+		osList = append(osList, "Windows")
+	}
+	if osValue&2 != 0 { // 假设第2位代表macOS
+		osList = append(osList, "macOS")
+	}
+	if osValue&4 != 0 { // 假设第3位代表Linux
+		osList = append(osList, "Linux")
+	}
+
+	return osList
 }
 
 // 管理命令与标签的多对多关系
