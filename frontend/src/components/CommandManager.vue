@@ -149,20 +149,20 @@ const newTag = ref({
   sortValue: 0      // 排序值
 });
 
-// // 模拟数据 - 标签列表
+// 标签菜单数据 - 稳定的数据，不会在切换内容时改变
 const tags = ref([
-  { id: 0, name: '全部标签', description: '开发相关指令',icon: '🏷️' },
+  { id: 0, name: '全部标签', description: '开发相关指令', icon: '🏷️' },
 ]);
 
-// // 模拟数据 - 集合列表
+// 集合菜单数据 - 稳定的数据，不会在切换内容时改变
 const collections = ref([
-  
+  { id: 0, name: '全部集合', description: '全部集合', icon: '📁' },
 ]);
 
-// // 模拟数据 - 命令列表（当前注释掉，使用后端API获取）
+// 当前显示的命令列表
 const commands = ref([]);
 
-// 模拟菜单项数据
+// 菜单项数据
 const menuItems = ref({
   tags: [     // 标签菜单
     { id: 0, name: '全部标签', icon: '🏷️' },
@@ -235,28 +235,35 @@ function getOptionAndHandle(option){
     // 更新数据 - 使用统一的数据更新逻辑
     if (result.data) {
       // 如果有 data 字段，从 data 中获取
-      if (result.data.tags) {
-        tags.value = result.data.tags;
-      }
-      if (result.data.collections) {
-        collections.value = result.data.collections;
-      }
+      // 注意：不要更新标签和集合菜单数据，只更新命令数据
       if (result.data.commands) {
         commands.value = result.data.commands;
       }
+      // 如果返回了新的标签数据，只在特定情况下更新（如初始加载）
+      if (result.data.tags && result.data.tags.length > 1) {
+        // 只有当返回的标签数据包含多个标签时才更新
+        // 避免单条命令数据覆盖整个标签菜单
+        tags.value = [...tags.value, ...result.data.tags.filter(tag => !tags.value.find(existing => existing.id === tag.id))];
+      }
+      if (result.data.collections && result.data.collections.length > 1) {
+        // 只有当返回的集合数据包含多个集合时才更新
+        collections.value = [...collections.value, ...result.data.collections.filter(col => !collections.value.find(existing => existing.id === col.id))];
+      }
     } else {
       // 如果没有 data 字段，直接从根级别获取
-      if (result.tags) {
-        tags.value = result.tags;
-      }
-      if (result.collections) {
-        collections.value = result.collections;
-      }
+      // 注意：不要更新标签和集合菜单数据，只更新命令数据
       if (result.options) {
         commands.value = result.options;
       }
       if (result.commands) {
         commands.value = result.commands;
+      }
+      // 如果返回了新的标签数据，只在特定情况下更新
+      if (result.tags && result.tags.length > 1) {
+        tags.value = [...tags.value, ...result.tags.filter(tag => !tags.value.find(existing => existing.id === tag.id))];
+      }
+      if (result.collections && result.collections.length > 1) {
+        collections.value = [...collections.value, ...result.collections.filter(col => !collections.value.find(existing => existing.id === col.id))];
       }
     }
   }).catch((error) => {
@@ -441,12 +448,70 @@ onMounted(() => {
   GetMenuItems().then((result) => {
     console.log("获取菜单项成功:", result);
     // 这里可以根据后端返回的数据更新menuItems
+    if (result && result.tags) {
+      menuItems.value.tags = result.tags;
+    }
+    if (result && result.collections) {
+      menuItems.value.collections = result.collections;
+    }
   }).catch((error) => {
     console.error("获取菜单项失败:", error);
   });
   
-  // 构建初始Option参数
-  const option = {
+  // 构建初始Option参数 - 专门用于获取完整标签和集合数据
+  const initialOption = {
+    Name: '',
+    Os: systemType.value,
+    Type: 'tags', // 先获取标签数据
+    ID: 0, // 获取所有标签
+    Sort: {}
+  };
+  
+  // 先获取标签数据
+  GetOptions(initialOption).then((result) => {
+    console.log("获取初始标签数据成功:", result);
+    // 确保获取完整的标签数据
+    if (result.data && result.data.tags) {
+      // 保留默认的"全部标签"，添加其他标签
+      const defaultTag = tags.value[0];
+      const newTags = result.data.tags.filter(tag => tag.id !== 0);
+      tags.value = [defaultTag, ...newTags];
+    } else if (result.tags) {
+      const defaultTag = tags.value[0];
+      const newTags = result.tags.filter(tag => tag.id !== 0);
+      tags.value = [defaultTag, ...newTags];
+    }
+  }).catch((error) => {
+    console.error("获取初始标签数据失败:", error);
+  });
+  
+  // 再获取集合数据
+  const collectionOption = {
+    Name: '',
+    Os: systemType.value,
+    Type: 'collections',
+    ID: 0,
+    Sort: {}
+  };
+  
+  GetOptions(collectionOption).then((result) => {
+    console.log("获取初始集合数据成功:", result);
+    // 确保获取完整的集合数据
+    if (result.data && result.data.collections) {
+      const defaultCollection = collections.value[0];
+      const newCollections = result.data.collections.filter(col => col.id !== 0);
+      collections.value = [defaultCollection, ...newCollections];
+    } else if (result.collections) {
+      const defaultCollection = collections.value[0];
+      const newCollections = result.collections.filter(col => col.id !== 0);
+      collections.value = [defaultCollection, ...newCollections];
+    }
+  }).catch((error) => {
+    console.error("获取初始集合数据失败:", error);
+  });
+  
+  // 最后获取当前菜单的命令数据
+  const commandOption = {
     Name: searchKeyword.value,
     Os: systemType.value,
     Type: menuType.value,
@@ -455,7 +520,7 @@ onMounted(() => {
   };
   
   // 调用GetOptions获取初始数据
-  getOptionAndHandle(option);
+  getOptionAndHandle(commandOption);
 });
 
 // 组件卸载时

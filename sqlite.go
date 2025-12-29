@@ -569,8 +569,21 @@ func CreateCollectionSQLite(collection *Collection) error {
 	collection.UpdatedAt = now
 	collection.SearchCount = 0
 
+	// 开启事务，确保所有操作要么全部成功，要么全部失败
+	tx, err := DB.Begin()
+	if err != nil {
+		return fmt.Errorf("开启事务失败: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("回滚事务失败: %v", rollbackErr)
+			}
+		}
+	}()
+
 	// 保存到SQLite数据库，不指定id字段，让SQLite自动生成
-	result, err := DB.Exec(
+	result, err := tx.Exec(
 		"INSERT INTO collections (name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		collection.Name, collection.Description, collection.SearchCount, "", collection.CreatedAt, collection.UpdatedAt, collection.DeletedAt,
 	)
@@ -585,11 +598,20 @@ func CreateCollectionSQLite(collection *Collection) error {
 	}
 	collection.ID = uint64(id)
 
-	// 保存OS关联关系
+	// 保存OS关联关系（在事务中执行）
 	for _, os := range collection.Os {
-		if err := AddOSToCollectionSQLite(collection.ID, os); err != nil {
+		_, err := tx.Exec(
+			"INSERT OR IGNORE INTO collection_os (collection_id, os) VALUES (?, ?)",
+			collection.ID, os,
+		)
+		if err != nil {
 			return fmt.Errorf("添加集合OS关系失败: %v", err)
 		}
+	}
+
+	// 提交事务，所有操作都成功完成
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
 	return nil
@@ -741,8 +763,21 @@ func CreateCommandSQLite(cmd *Command) error {
 	cmd.CopyCounts = 0
 	cmd.SearchCount = 0
 
+	// 开启事务，确保所有操作要么全部成功，要么全部失败
+	tx, err := DB.Begin()
+	if err != nil {
+		return fmt.Errorf("开启事务失败: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("回滚事务失败: %v", rollbackErr)
+			}
+		}
+	}()
+
 	// 保存命令基本信息到SQLite数据库，不指定id字段，让SQLite自动生成
-	result, err := DB.Exec(
+	result, err := tx.Exec(
 		"INSERT INTO commands (name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, 0, cmd.CreatedAt, cmd.UpdatedAt, cmd.DeletedAt,
 	)
@@ -757,25 +792,42 @@ func CreateCommandSQLite(cmd *Command) error {
 	}
 	cmd.ID = uint64(id)
 
-	// 保存命令与标签的多对多关系
+	// 保存命令与标签的多对多关系（在事务中执行）
 	for _, tagID := range cmd.TagIDs {
-		if err := AddTagToCommandSQLite(cmd.ID, tagID); err != nil {
+		_, err := tx.Exec(
+			"INSERT OR IGNORE INTO command_tags (command_id, tag_id) VALUES (?, ?)",
+			cmd.ID, tagID,
+		)
+		if err != nil {
 			return fmt.Errorf("添加命令标签关系失败: %v", err)
 		}
 	}
 
-	// 保存命令与集合的多对多关系
+	// 保存命令与集合的多对多关系（在事务中执行）
 	for _, collectionID := range cmd.CollectionIDs {
-		if err := AddCollectionToCommandSQLite(cmd.ID, collectionID); err != nil {
+		_, err := tx.Exec(
+			"INSERT OR IGNORE INTO command_collections (command_id, collection_id) VALUES (?, ?)",
+			cmd.ID, collectionID,
+		)
+		if err != nil {
 			return fmt.Errorf("添加命令集合关系失败: %v", err)
 		}
 	}
 
-	// 保存OS关联关系
+	// 保存OS关联关系（在事务中执行）
 	for _, os := range cmd.Os {
-		if err := AddOSToCommandSQLite(cmd.ID, os); err != nil {
+		_, err := tx.Exec(
+			"INSERT OR IGNORE INTO command_os (command_id, os) VALUES (?, ?)",
+			cmd.ID, os,
+		)
+		if err != nil {
 			return fmt.Errorf("添加命令OS关系失败: %v", err)
 		}
+	}
+
+	// 提交事务，所有操作都成功完成
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
 	return nil
