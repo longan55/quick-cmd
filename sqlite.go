@@ -757,11 +757,24 @@ func DeleteCollectionSQLite(id uint64) error {
 
 // CreateCommandSQLite 创建命令
 func CreateCommandSQLite(cmd *Command) error {
+	log.Printf("CreateCommandSQLite请求参数: %+v\n", cmd)
 	now := time.Now()
 	cmd.CreatedAt = now
 	cmd.UpdatedAt = now
 	cmd.CopyCounts = 0
 	cmd.SearchCount = 0
+
+	// 检查命令名称是否已存在
+	var exists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM commands WHERE name = ? AND deleted_at IS NULL)", cmd.Name).Scan(&exists)
+	if err != nil {
+		log.Printf("检查命令是否存在失败: %v", err)
+		return fmt.Errorf("检查命令是否存在失败: %v", err)
+	}
+	if exists {
+		log.Printf("命令[%s]已存在", cmd.Name)
+		return fmt.Errorf("命令[%s]已存在", cmd.Name)
+	}
 
 	// 开启事务，确保所有操作要么全部成功，要么全部失败
 	tx, err := DB.Begin()
@@ -778,8 +791,8 @@ func CreateCommandSQLite(cmd *Command) error {
 
 	// 保存命令基本信息到SQLite数据库，不指定id字段，让SQLite自动生成
 	result, err := tx.Exec(
-		"INSERT INTO commands (name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, 0, cmd.CreatedAt, cmd.UpdatedAt, cmd.DeletedAt,
+		"INSERT INTO commands (name, content, description, copy_count, search_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, cmd.CreatedAt, cmd.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("创建命令失败: %v", err)
@@ -792,9 +805,10 @@ func CreateCommandSQLite(cmd *Command) error {
 	}
 	cmd.ID = uint64(id)
 
+	log.Printf("创建命令成功, ID: %d", id)
 	// 保存命令与标签的多对多关系（在事务中执行）
 	for _, tagID := range cmd.TagIDs {
-		_, err := tx.Exec(
+		_, err = tx.Exec(
 			"INSERT OR IGNORE INTO command_tags (command_id, tag_id) VALUES (?, ?)",
 			cmd.ID, tagID,
 		)
@@ -802,10 +816,10 @@ func CreateCommandSQLite(cmd *Command) error {
 			return fmt.Errorf("添加命令标签关系失败: %v", err)
 		}
 	}
-
+	log.Printf("添加命令标签关系成功, 命令ID: %d, 标签ID: %v", cmd.ID, cmd.TagIDs)
 	// 保存命令与集合的多对多关系（在事务中执行）
 	for _, collectionID := range cmd.CollectionIDs {
-		_, err := tx.Exec(
+		_, err = tx.Exec(
 			"INSERT OR IGNORE INTO command_collections (command_id, collection_id) VALUES (?, ?)",
 			cmd.ID, collectionID,
 		)
@@ -813,10 +827,11 @@ func CreateCommandSQLite(cmd *Command) error {
 			return fmt.Errorf("添加命令集合关系失败: %v", err)
 		}
 	}
+	log.Printf("添加命令集合关系成功, 命令ID: %d, 集合ID: %v", cmd.ID, cmd.CollectionIDs)
 
 	// 保存OS关联关系（在事务中执行）
 	for _, os := range cmd.Os {
-		_, err := tx.Exec(
+		_, err = tx.Exec(
 			"INSERT OR IGNORE INTO command_os (command_id, os) VALUES (?, ?)",
 			cmd.ID, os,
 		)
@@ -824,12 +839,14 @@ func CreateCommandSQLite(cmd *Command) error {
 			return fmt.Errorf("添加命令OS关系失败: %v", err)
 		}
 	}
+	log.Printf("添加命令OS关系成功, 命令ID: %d, OS: %v", cmd.ID, cmd.Os)
 
 	// 提交事务，所有操作都成功完成
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
+	log.Printf("创建命令成功, ID: %d", cmd.ID)
 	return nil
 }
 

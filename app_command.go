@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"time"
 )
 
@@ -23,14 +25,21 @@ type Command struct {
 // CreateCommand 创建指令
 func (a *App) CreateCommand(cmd *Command) error {
 	// 简单的ID生成（实际应用中应该使用更可靠的ID生成方式）
-
+	err := CreateCommandSQLite(cmd)
+	if err != nil {
+		return fmt.Errorf("创建指令失败: %v", err)
+	}
 	return nil
 }
 
 // GetCommand 获取单个指令
 func (a *App) GetCommand(id uint64) (*Command, error) {
-
-	return nil, nil
+	log.Printf("GetCommand: %d\n", id)
+	cmd, err := GetCommandSQLite(id)
+	if err != nil {
+		return nil, fmt.Errorf("获取指令失败: %v", err)
+	}
+	return cmd, nil
 }
 
 // UpdateCommand 更新指令
