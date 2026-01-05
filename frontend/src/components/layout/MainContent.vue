@@ -261,6 +261,8 @@
 
 <script setup>
 import { ref, computed, defineProps, defineEmits } from 'vue';
+// 导入后端API函数
+import { CreateCommand } from '../../../wailsjs/go/main/App';
 
 const props = defineProps({
   activeAddInterface: {
@@ -379,18 +381,42 @@ function generateUUID() {
 }
 
 // 保存命令
-function saveCommand() {
+async function saveCommand() {
   if (!newCommand.value.name || !newCommand.value.content) {
     alert('请填写指令名称和内容');
     return;
   }
   
-  newCommand.value.id = generateUUID();
-  emit('add-command', { ...newCommand.value });
-  
-  // 重置表单并关闭界面
-  resetCommandForm();
-  emit('toggle-add-interface', 'command');
+  try {
+    // 构造符合后端Command结构体的数据
+    const commandData = {
+      name: newCommand.value.name,
+      content: newCommand.value.content,
+      description: newCommand.value.description,
+      os: newCommand.value.systemType,
+      tagIDs: newCommand.value.tags.map(tag => typeof tag === 'object' ? tag.id : tag), // 提取标签ID
+      collectionIDs: newCommand.value.collections.map(collection => typeof collection === 'object' ? collection.id : collection) // 提取集合ID
+    };
+    
+    console.log('保存命令数据:', commandData);
+    
+    // 调用后端API创建命令
+    await CreateCommand(commandData);
+    
+    // 显示成功消息
+    alert('命令创建成功！');
+    
+    // 重置表单并关闭界面
+    resetCommandForm();
+    emit('toggle-add-interface', 'command');
+    
+    // 通知父组件刷新数据
+    emit('refresh-data');
+    
+  } catch (error) {
+    console.error('创建命令失败:', error);
+    alert(`创建命令失败: ${error.message || error}`);
+  }
 }
 
 // 保存集合

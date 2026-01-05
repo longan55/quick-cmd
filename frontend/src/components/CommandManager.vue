@@ -34,7 +34,7 @@
       />
       
       <!-- 右侧主内容区 -->
-      <MainContent 
+      <MainContent
         :activeAddInterface="activeAddInterface"
         :menuType="menuType"
         :activeMenu="activeMenu"
@@ -50,6 +50,7 @@
         @edit-item="editItem"
         @delete-item="deleteItem"
         @copy-to-clipboard="copyToClipboard"
+        @refresh-data="refreshData"
       />
     </div>
     
@@ -236,9 +237,9 @@ function getOptionAndHandle(option){
     if (result.data) {
       // 如果有 data 字段，从 data 中获取
       // 注意：不要更新标签和集合菜单数据，只更新命令数据
-      if (result.data.commands) {
-        commands.value = result.data.commands;
-      }
+      // if (result.data.options) {
+        commands.value = result.data.options;
+      // }
       // 如果返回了新的标签数据，只在特定情况下更新（如初始加载）
       if (result.data.tags && result.data.tags.length > 1) {
         // 只有当返回的标签数据包含多个标签时才更新
@@ -282,6 +283,9 @@ function toggleSystemType(type) {
     // 如果存在，从数组中移除
     systemType.value.splice(index, 1);
   }
+  
+  // 清空已选的菜单项ID，将其设置为默认的'home'
+  activeMenu.value = 'home';
   
   // 调用GetOptions获取数据
   const option = {
@@ -338,9 +342,76 @@ function closeAboutModal() {
 
 // 新增命令
 function addCommand(command) {
-  // 将新命令添加到命令列表
-  commands.value.push(command);
-  // 这里可以添加保存到后端的逻辑
+  // 直接使用刷新数据功能来更新所有数据
+  refreshData();
+}
+
+// 刷新数据 - 重新加载菜单和命令数据
+function refreshData() {
+  console.log("正在刷新数据...");
+  
+  // 重新加载标签数据
+  const tagOption = {
+    Name: '',
+    Os: systemType.value,
+    Type: 'tags',
+    ID: 0,
+    Sort: {}
+  };
+  
+  GetOptions(tagOption).then((result) => {
+    console.log("刷新标签数据成功:", result);
+    // 确保获取完整的标签数据
+    if (result.data && result.data.tags) {
+      // 保留默认的"全部标签"，添加其他标签
+      const defaultTag = tags.value[0];
+      const newTags = result.data.tags.filter(tag => tag.id !== 0);
+      tags.value = [defaultTag, ...newTags];
+    } else if (result.tags) {
+      const defaultTag = tags.value[0];
+      const newTags = result.tags.filter(tag => tag.id !== 0);
+      tags.value = [defaultTag, ...newTags];
+    }
+  }).catch((error) => {
+    console.error("刷新标签数据失败:", error);
+  });
+
+  // 重新加载集合数据
+  const collectionOption = {
+    Name: '',
+    Os: systemType.value,
+    Type: 'collections',
+    ID: 0,
+    Sort: {}
+  };
+
+  GetOptions(collectionOption).then((result) => {
+    console.log("刷新集合数据成功:", result);
+    // 确保获取完整的集合数据
+    if (result.data && result.data.collections) {
+      const defaultCollection = collections.value[0];
+      const newCollections = result.data.collections.filter(col => col.id !== 0);
+      collections.value = [defaultCollection, ...newCollections];
+    } else if (result.collections) {
+      const defaultCollection = collections.value[0];
+      const newCollections = result.collections.filter(col => col.id !== 0);
+      collections.value = [defaultCollection, ...newCollections];
+    }
+  }).catch((error) => {
+    console.error("刷新集合数据失败:", error);
+  });
+
+  // 重新加载当前菜单的命令数据
+  const commandOption = {
+    Name: searchKeyword.value,
+    Os: systemType.value,
+    Type: menuType.value,
+    ID: parseInt(activeMenu.value),
+    Sort: buildSortParams()
+  };
+
+  // 调用GetOptions获取数据
+  getOptionAndHandle(commandOption);
 }
 
 // 新增集合
@@ -531,6 +602,9 @@ onUnmounted(() => {
 
 // 监听菜单类型变化
 watch(() => menuType.value, () => {
+  // 清空已选的菜单项ID，将其设置为默认的'home'
+  activeMenu.value = 'home';
+  
   // 构建Option参数
   const option = {
     Name: searchKeyword.value,
@@ -632,3 +706,4 @@ watch([sortOptions, sortDirections], () => {
   }
 }
 </style>
+

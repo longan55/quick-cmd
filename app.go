@@ -60,7 +60,7 @@ type SortOption struct {
 func (a *App) GetOptions(option Option) (response Response) {
 	fmt.Printf("GetOptions: %+v\n", option)
 	switch option.Type {
-	case "commands":
+	case "commands", "all":
 		log.Printf("GetCommandsOptions")
 		response.Data = getCommandsOptions(option)
 	case "tags":
@@ -124,10 +124,19 @@ func getCollectionsOptions(option Option) AllCommands {
 func getCommandsOptions(option Option) AllCommands {
 	// 这里应该根据option参数查询数据库获取命令列表
 	// 目前返回空列表，后续需要实现具体逻辑
+	commands, err := GetCommandsSQLite(option)
+	if err != nil {
+		log.Printf("GetCommandsSQLite failed: %v", err)
+		return AllCommands{
+			Tags:        []*Tag{},
+			Collections: []*Collection{},
+			Commands:    []*Command{},
+		}
+	}
 	return AllCommands{
 		Tags:        []*Tag{},
 		Collections: []*Collection{},
-		Commands:    []*Command{},
+		Commands:    commands,
 	}
 }
 

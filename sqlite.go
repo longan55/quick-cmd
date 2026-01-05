@@ -846,7 +846,7 @@ func CreateCommandSQLite(cmd *Command) error {
 		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
-	log.Printf("创建命令成功, ID: %d", cmd.ID)
+	log.Printf("创建命令事物完成, ID: %d", cmd.ID)
 	return nil
 }
 
@@ -904,9 +904,9 @@ func GetCommandsByTagIDs(ids []uint64) ([]*Command, error) {
 	}
 	var commands []*Command
 	query := `
-	SELECT * FROM commands
-	INNER JOIN command_tags ct ON commands.id = ct.command_id
-	WHERE commands.deleted_at IS NULL
+	SELECT cmd.* FROM commands cmd
+	INNER JOIN command_tags ct ON cmd.id = ct.command_id
+	WHERE cmd.deleted_at IS NULL
 	AND ct.tag_id IN %s ;
 	`
 	args, err := SQL_Slice_To_In_Args(ids)
@@ -925,10 +925,10 @@ func GetCommandsByTagIDs(ids []uint64) ([]*Command, error) {
 	for rows.Next() {
 		var cmd Command
 		var deletedAt sql.NullTime
-		var osString string
+		// var osString string
 
 		err := rows.Scan(
-			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &osString, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
+			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("扫描命令失败: %v", err)
@@ -950,7 +950,7 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 
 	// 从SQLite数据库获取所有命令的基本信息
 	// 构建查询条件
-	query := "SELECT id, name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at FROM commands WHERE deleted_at IS NULL"
+	query := "SELECT id, name, content, description, copy_count, search_count, created_at, updated_at, deleted_at FROM commands WHERE deleted_at IS NULL"
 	args := []interface{}{}
 
 	// 添加OS条件

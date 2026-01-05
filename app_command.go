@@ -25,6 +25,7 @@ type Command struct {
 // CreateCommand 创建指令
 func (a *App) CreateCommand(cmd *Command) error {
 	// 简单的ID生成（实际应用中应该使用更可靠的ID生成方式）
+	log.Printf("创建指令请求: %v\n", cmd)
 	err := CreateCommandSQLite(cmd)
 	if err != nil {
 		return fmt.Errorf("创建指令失败: %v", err)
