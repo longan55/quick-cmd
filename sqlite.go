@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -950,18 +949,11 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 
 	// 从SQLite数据库获取所有命令的基本信息
 	// 构建查询条件
-	query := "SELECT id, name, content, description, copy_count, search_count, created_at, updated_at, deleted_at FROM commands WHERE deleted_at IS NULL"
+	query := "SELECT id, name, content, description, copy_count, search_count, created_at, updated_at, deleted_at FROM commands c JOIN command_os cs WHERE deleted_at IS NULL"
 	args := []interface{}{}
 
 	// 添加OS条件
-	if len(option.Os) > 0 {
-		osPlaceholders := make([]string, len(option.Os))
-		for i, os := range option.Os {
-			osPlaceholders[i] = "?"
-			args = append(args, os)
-		}
-		query += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM command_os co WHERE co.command_id = commands.id AND co.os IN (%s))", strings.Join(osPlaceholders, ","))
-	}
+
 	if option.Name != "" {
 		query += " AND name LIKE ?"
 		args = append(args, "%"+option.Name+"%")
@@ -970,7 +962,21 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 		query += " AND id = ?"
 		args = append(args, option.ID)
 	}
+	if len(option.Os) > 0 {
+		osPlaceholders := make([]string, len(option.Os))
+		for i, os := range option.Os {
+			osPlaceholders[i] = "?"
+			args = append(args, os)
+		}
+		args, err := SQL_Slice_To_In_Args(option.Os)
+		if err != nil {
+			return nil, fmt.Errorf("转换ID列表为IN参数失败: %v", err)
+		}
+		query += fmt.Sprintf(" AND cs.os IN %s ;", args)
+	}
 
+	log.Printf("GetCommandsSQLite SQL: %s", query)
+	log.Printf("GetCommandsSQLite args: %s", args)
 	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("获取命令列表失败: %v", err)
@@ -981,10 +987,10 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 	for rows.Next() {
 		var cmd Command
 		var deletedAt sql.NullTime
-		var osString string
+		// var osString string
 
 		err := rows.Scan(
-			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &osString, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
+			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("扫描命令失败: %v", err)
