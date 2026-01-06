@@ -10,11 +10,12 @@ import (
 type Tag struct {
 	ID          uint64     `json:"id"`
 	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	SearchCount int        `json:"searchCount"`
-	Os          []string   `json:"os"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	Description string     `json:"description,omitempty"`
+	SearchCount int        `json:"searchCount,omitempty"`
+	Os          []string   `json:"os,omitempty"`
+	CommandIDs  []uint64   `json:"commandIds,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt,omitempty"`
+	UpdatedAt   time.Time  `json:"updatedAt,omitempty"`
 	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
 }
 

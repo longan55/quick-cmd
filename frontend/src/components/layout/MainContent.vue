@@ -25,30 +25,38 @@
         
         <div class="form-group">
           <label>所属标签</label>
-          <div class="tag-selector">
-            <label v-for="tag in tags" :key="tag.id" class="tag-option">
-              <input 
-                type="checkbox" 
-                :value="tag.id" 
-                v-model="newCommand.tags"
-              />
-              <span>{{ tag.name }}</span>
-            </label>
-          </div>
+          <el-select
+            v-model="newCommand.tags"
+            multiple
+            filterable
+            placeholder="请选择标签"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="tag in allTags"
+              :key="tag.id"
+              :label="`[${tag.id}] ${tag.name}`"
+              :value="tag.id"
+            />
+          </el-select>
         </div>
         
         <div class="form-group">
           <label>所属集合</label>
-          <div class="collection-selector">
-            <label v-for="collection in collections" :key="collection.id" class="collection-option">
-              <input 
-                type="checkbox" 
-                :value="collection.id" 
-                v-model="newCommand.collections"
-              />
-              <span>{{ collection.name }}</span>
-            </label>
-          </div>
+          <el-select
+            v-model="newCommand.collections"
+            multiple
+            filterable
+            placeholder="请选择集合"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="collection in allCollections"
+              :key="collection.id"
+              :label="`[${collection.id}] ${collection.name}`"
+              :value="collection.id"
+            />
+          </el-select>
         </div>
         
         <div class="form-group">
@@ -95,6 +103,24 @@
         </div>
         
         <div class="form-group">
+          <label>关联指令</label>
+          <el-select
+            v-model="newCollection.commandIds"
+            multiple
+            filterable
+            placeholder="请选择关联指令"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cmd in allCommands"
+              :key="cmd.id"
+              :label="`[${cmd.id}] ${cmd.name}`"
+              :value="cmd.id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="form-group">
           <label>适用系统</label>
           <div class="system-selector">
             <label class="system-option">
@@ -136,6 +162,24 @@
         <div class="form-group">
           <label for="tag-description">标签描述</label>
           <textarea id="tag-description" v-model="newTag.description" placeholder="请输入标签描述" rows="2"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>关联指令</label>
+          <el-select
+            v-model="newTag.commandIds"
+            multiple
+            filterable
+            placeholder="请选择关联指令"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cmd in allCommands"
+              :key="cmd.id"
+              :label="`[${cmd.id}] ${cmd.name}`"
+              :value="cmd.id"
+            />
+          </el-select>
         </div>
         
         <div class="form-group">
@@ -260,9 +304,8 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits } from 'vue';
-// 导入后端API函数
-import { CreateCommand } from '../../../wailsjs/go/main/App';
+import { ref, computed, defineProps, defineEmits, onMounted } from 'vue';
+import { CreateCommand, GetAllCommandsIDAndName, GetAllTagsIDAndName, GetAllCollectionsIDAndName } from '../../../wailsjs/go/main/App';
 
 const props = defineProps({
   activeAddInterface: {
@@ -324,7 +367,8 @@ const newCollection = ref({
   name: '',
   description: '',
   sortValue: 0,
-  systemType: []
+  systemType: [],
+  commandIds: []
 });
 
 const newTag = ref({
@@ -332,7 +376,27 @@ const newTag = ref({
   name: '',
   description: '',
   sortValue: 0,
-  systemType: []
+  systemType: [],
+  commandIds: []
+});
+
+const allCommands = ref([]);
+const allTags = ref([]);
+const allCollections = ref([]);
+
+onMounted(async () => {
+  try {
+    const [commands, tags, collections] = await Promise.all([
+      GetAllCommandsIDAndName(),
+      GetAllTagsIDAndName(),
+      GetAllCollectionsIDAndName()
+    ]);
+    allCommands.value = commands;
+    allTags.value = tags;
+    allCollections.value = collections;
+  } catch (error) {
+    console.error('获取数据失败:', error);
+  }
 });
 
 // 计算属性：根据搜索关键词过滤命令
@@ -430,7 +494,8 @@ function saveCollection() {
   const collectionData = {
     name: newCollection.value.name,
     description: newCollection.value.description,
-    os: newCollection.value.systemType
+    os: newCollection.value.systemType,
+    commandIds: newCollection.value.commandIds
   };
   
   emit('add-collection', collectionData);
@@ -452,7 +517,8 @@ function saveTag() {
     name: newTag.value.name,
     description: newTag.value.description,
     searchCount: 0,
-    os: newTag.value.systemType
+    os: newTag.value.systemType,
+    commandIds: newTag.value.commandIds
   };
   
   emit('add-tag', tagData);
@@ -483,7 +549,8 @@ function resetCollectionForm() {
     name: '',
     description: '',
     sortValue: 0,
-    systemType: []
+    systemType: [],
+    commandIds: []
   };
 }
 
@@ -493,7 +560,8 @@ function resetTagForm() {
     name: '',
     description: '',
     sortValue: 0,
-    systemType: []
+    systemType: [],
+    commandIds: []
   };
 }
 </script>

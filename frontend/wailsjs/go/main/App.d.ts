@@ -14,6 +14,12 @@ export function DeleteCommand(arg1:number):Promise<void>;
 
 export function DeleteTag(arg1:number):Promise<void>;
 
+export function GetAllCollectionsIDAndName():Promise<Array<main.Collection>>;
+
+export function GetAllCommandsIDAndName():Promise<Array<main.Command>>;
+
+export function GetAllTagsIDAndName():Promise<Array<main.Tag>>;
+
 export function GetCollection(arg1:number):Promise<main.Collection>;
 
 export function GetCommand(arg1:number):Promise<main.Command>;

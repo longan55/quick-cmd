@@ -114,10 +114,32 @@ func getTagsOptions(option Option) AllCommands {
 func getCollectionsOptions(option Option) AllCommands {
 	// 这里应该根据option参数查询数据库获取集合列表
 	// 目前返回空列表，后续需要实现具体逻辑
+	collections, err := GetCollectionsSQLite(option)
+	if err != nil {
+		log.Printf("GetCollectionsSQLite failed: %v", err)
+		return AllCommands{
+			Tags:        []*Tag{},
+			Collections: []*Collection{},
+			Commands:    []*Command{},
+		}
+	}
+	collectionIDs := make([]uint64, 0, len(collections))
+	for _, collection := range collections {
+		collectionIDs = append(collectionIDs, collection.ID)
+	}
+	commands, err := GetCommandByCollectionIds(collectionIDs)
+	if err != nil {
+		log.Printf("GetCommandByCollectionIds failed: %v", err)
+		return AllCommands{
+			Tags:        []*Tag{},
+			Collections: collections,
+			Commands:    []*Command{},
+		}
+	}
 	return AllCommands{
 		Tags:        []*Tag{},
-		Collections: []*Collection{},
-		Commands:    []*Command{},
+		Collections: collections,
+		Commands:    commands,
 	}
 }
 
@@ -133,6 +155,7 @@ func getCommandsOptions(option Option) AllCommands {
 			Commands:    []*Command{},
 		}
 	}
+	log.Printf("GetCommandsSQLite success: %v", commands)
 	return AllCommands{
 		Tags:        []*Tag{},
 		Collections: []*Collection{},
@@ -144,4 +167,12 @@ type AllCommands struct {
 	Tags        []*Tag        `json:"tags"`
 	Collections []*Collection `json:"collections"`
 	Commands    []*Command    `json:"options"`
+}
+
+func (a *App) GetAllTagsIDAndName() ([]Tag, error) {
+	return GetTagIDAndNameSQLite()
+}
+
+func (a *App) GetAllCollectionsIDAndName() ([]Collection, error) {
+	return GetCollectionIDAndNameSQLite()
 }

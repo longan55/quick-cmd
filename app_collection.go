@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -9,18 +10,26 @@ import (
 type Collection struct {
 	ID          uint64     `json:"id"`
 	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	SearchCount int        `json:"searchCount"`
-	Os          []string   `json:"os"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	Description string     `json:"description,omitempty"`
+	SearchCount int        `json:"searchCount,omitempty"`
+	Os          []string   `json:"os,omitempty"`
+	CommandIDs  []uint64   `json:"commandIds,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt,omitempty"`
+	UpdatedAt   time.Time  `json:"updatedAt,omitempty"`
 	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
 }
 
 // CreateCollection 创建集合
 func (a *App) CreateCollection(col *Collection) error {
+	log.Printf("CreateCollection: %+v\n", col)
 	// 简单的ID生成
-
+	col.ID = uint64(time.Now().UnixNano())
+	err := CreateCollectionSQLite(col)
+	if err != nil {
+		log.Printf("创建集合失败: %v", err)
+		return fmt.Errorf("创建集合失败: %v", err)
+	}
+	log.Printf("创建集合成功: %+v", col)
 	return nil
 }
 

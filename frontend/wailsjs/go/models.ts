@@ -3,13 +3,14 @@ export namespace main {
 	export class Collection {
 	    id: number;
 	    name: string;
-	    description: string;
-	    searchCount: number;
-	    os: string[];
+	    description?: string;
+	    searchCount?: number;
+	    os?: string[];
+	    commandIds?: number[];
 	    // Go type: time
-	    createdAt: any;
+	    createdAt?: any;
 	    // Go type: time
-	    updatedAt: any;
+	    updatedAt?: any;
 	    // Go type: time
 	    deletedAt?: any;
 	
@@ -24,6 +25,7 @@ export namespace main {
 	        this.description = source["description"];
 	        this.searchCount = source["searchCount"];
 	        this.os = source["os"];
+	        this.commandIds = source["commandIds"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
 	        this.deletedAt = this.convertValues(source["deletedAt"], null);
@@ -50,17 +52,17 @@ export namespace main {
 	export class Command {
 	    id: number;
 	    name: string;
-	    content: string;
-	    description: string;
-	    copyCount: number;
-	    searchCount: number;
-	    os: string[];
-	    tagIDs: number[];
-	    collectionIDs: number[];
+	    content?: string;
+	    description?: string;
+	    copyCount?: number;
+	    searchCount?: number;
+	    os?: string[];
+	    tagIDs?: number[];
+	    collectionIDs?: number[];
 	    // Go type: time
-	    createdAt: any;
+	    createdAt?: any;
 	    // Go type: time
-	    updatedAt: any;
+	    updatedAt?: any;
 	    // Go type: time
 	    deletedAt?: any;
 	
@@ -228,13 +230,14 @@ export namespace main {
 	export class Tag {
 	    id: number;
 	    name: string;
-	    description: string;
-	    searchCount: number;
-	    os: string[];
+	    description?: string;
+	    searchCount?: number;
+	    os?: string[];
+	    commandIds?: number[];
 	    // Go type: time
-	    createdAt: any;
+	    createdAt?: any;
 	    // Go type: time
-	    updatedAt: any;
+	    updatedAt?: any;
 	    // Go type: time
 	    deletedAt?: any;
 	
@@ -249,6 +252,7 @@ export namespace main {
 	        this.description = source["description"];
 	        this.searchCount = source["searchCount"];
 	        this.os = source["os"];
+	        this.commandIds = source["commandIds"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
 	        this.deletedAt = this.convertValues(source["deletedAt"], null);

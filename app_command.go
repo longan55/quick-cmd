@@ -10,15 +10,15 @@ import (
 type Command struct {
 	ID            uint64     `json:"id"`
 	Name          string     `json:"name"`
-	Content       string     `json:"content"`
-	Description   string     `json:"description"`
-	CopyCounts    int        `json:"copyCount"`
-	SearchCount   int        `json:"searchCount"`
-	Os            []string   `json:"os"`
-	TagIDs        []uint64   `json:"tagIDs"`        // 标签ID列表
-	CollectionIDs []uint64   `json:"collectionIDs"` // 集合ID列表
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	Content       string     `json:"content,omitempty"`
+	Description   string     `json:"description,omitempty"`
+	CopyCounts    int        `json:"copyCount,omitempty"`
+	SearchCount   int        `json:"searchCount,omitempty"`
+	Os            []string   `json:"os,omitempty"`
+	TagIDs        []uint64   `json:"tagIDs,omitempty"`        // 标签ID列表
+	CollectionIDs []uint64   `json:"collectionIDs,omitempty"` // 集合ID列表
+	CreatedAt     time.Time  `json:"createdAt,omitempty"`
+	UpdatedAt     time.Time  `json:"updatedAt,omitempty"`
 	DeletedAt     *time.Time `json:"deletedAt,omitempty"`
 }
 
@@ -55,4 +55,8 @@ func (a *App) DeleteCommand(id uint64) error {
 	// 检查指令是否存在
 
 	return nil
+}
+
+func (a *App) GetAllCommandsIDAndName() ([]*Command, error) {
+	return GetAllCommandsIDAndNameSQLite()
 }

@@ -241,12 +241,12 @@ function getOptionAndHandle(option){
         commands.value = result.data.options;
       // }
       // 如果返回了新的标签数据，只在特定情况下更新（如初始加载）
-      if (result.data.tags && result.data.tags.length > 1) {
+      if (result.data.tags && result.data.tags.length > 0) {
         // 只有当返回的标签数据包含多个标签时才更新
         // 避免单条命令数据覆盖整个标签菜单
         tags.value = [...tags.value, ...result.data.tags.filter(tag => !tags.value.find(existing => existing.id === tag.id))];
       }
-      if (result.data.collections && result.data.collections.length > 1) {
+      if (result.data.collections && result.data.collections.length > 0) {
         // 只有当返回的集合数据包含多个集合时才更新
         collections.value = [...collections.value, ...result.data.collections.filter(col => !collections.value.find(existing => existing.id === col.id))];
       }

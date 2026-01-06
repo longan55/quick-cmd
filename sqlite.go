@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -314,809 +313,6 @@ func GetCommandOSsSQLite(commandID uint64) ([]string, error) {
 	return osList, nil
 }
 
-// CreateTagSQLite 创建标签
-func CreateTagSQLite(tag *Tag) error {
-	log.Printf("CreateTagSQLite: %+v", tag)
-	now := time.Now()
-	tag.CreatedAt = now
-	tag.UpdatedAt = now
-	tag.SearchCount = 0
-
-	//1. 检查标签是否存在
-	var exists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM tags WHERE name = ? AND deleted_at IS NULL)", tag.Name).Scan(&exists)
-	if err != nil {
-		log.Printf("检查标签是否存在失败: %v", err)
-		return fmt.Errorf("检查标签是否存在失败: %v", err)
-	}
-	if exists {
-		log.Printf("标签[%s]已存在", tag.Name)
-		return fmt.Errorf("标签[%s]已存在", tag.Name)
-	}
-
-	// 开启事务，创建tag和tag_os关联关系
-	tx, err := DB.Begin()
-	if err != nil {
-		log.Printf("开启事务失败: %v", err)
-		return fmt.Errorf("开启事务失败: %v", err)
-	}
-	// defer
-
-	result, err := tx.Exec(
-		"INSERT INTO tags (name, description, search_count, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?)",
-		tag.Name, tag.Description, tag.SearchCount, tag.CreatedAt, tag.UpdatedAt, tag.DeletedAt,
-	)
-	if err != nil {
-		log.Printf("创建标签失败: %v", err)
-		tx.Rollback()
-		return fmt.Errorf("创建标签失败: %v", err)
-	}
-	log.Printf("更新tags表成功: %+v", tag)
-	// 获取SQLite自动生成的ID
-	id, err := result.LastInsertId()
-	if err != nil {
-		log.Printf("获取标签ID失败: %v", err)
-		return fmt.Errorf("获取标签ID失败: %v", err)
-	}
-	tag.ID = uint64(id)
-	log.Printf("标签ID: %d", tag.ID)
-	// 2. 保存OS关联关系
-	for i, os := range tag.Os {
-		log.Printf("添加标签OS关系%d: %s", i, os)
-		if err = AddOSToTagSQLite(tx, tag.ID, os); err != nil {
-			log.Printf("添加标签OS关系失败: %v", err)
-			tx.Rollback()
-			return fmt.Errorf("添加标签OS关系失败: %v", err)
-		}
-		log.Printf("更新tag_os关系成功: %s", os)
-	}
-	log.Printf("创建标签成功: %+v", tag)
-	tx.Commit()
-	return nil
-}
-
-// GetTagSQLite 获取单个标签
-func GetTagSQLite(id uint64) (*Tag, error) {
-	// 输入验证
-	if id == 0 {
-		return nil, fmt.Errorf("标签ID不能为空")
-	}
-
-	var tag Tag
-	var deletedAt sql.NullTime
-	var osString string
-
-	// 使用参数化查询，防止SQL注入
-	err := DB.QueryRow(
-		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM tags WHERE id = ? AND deleted_at IS NULL",
-		id,
-	).Scan(
-		&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &osString, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("tag not found: %d", id)
-		}
-		return nil, fmt.Errorf("获取标签失败: %v", err)
-	}
-
-	// 从关联表获取OS信息
-	if tag.Os, err = GetTagOSsSQLite(id); err != nil {
-		return nil, fmt.Errorf("获取标签OS失败: %v", err)
-	}
-
-	// 处理deletedAt字段
-	if deletedAt.Valid {
-		tag.DeletedAt = &deletedAt.Time
-	}
-
-	return &tag, nil
-}
-
-// GetTagsSQLite 获取所有标签
-func GetTagsSQLite(option Option) ([]*Tag, error) {
-	var tags []*Tag
-	var query string
-	var args []interface{}
-
-	// 构建查询条件
-	if len(option.Os) > 0 {
-		// 如果有OS条件，使用JOIN查询关联表
-		query = `
-			SELECT DISTINCT t.id, t.name, t.description, t.search_count, t.created_at, t.updated_at, t.deleted_at
-			FROM tags t RIGHT JOIN tag_os tos 
-			ON t.id = tos.tag_id
-			WHERE t.deleted_at IS NULL
-		`
-	} else {
-		// 没有OS条件，直接查询tags表
-		query = "SELECT DISTINCT t.id, t.name, t.description, t.search_count, t.created_at, t.updated_at, t.deleted_at FROM tags AS t WHERE t.deleted_at IS NULL"
-	}
-
-	if option.Name != "" {
-		query += " AND t.name LIKE ?"
-		args = append(args, "%"+option.Name+"%")
-	}
-	if option.ID != 0 {
-		query += " AND t.id = ?"
-		args = append(args, option.ID)
-	}
-	if len(option.Os) > 0 {
-		// 转换OS切片为SQLite IN 子句的参数
-		// for _, os := range option.Os {
-		// 	query += fmt.Sprintf(" AND tos.os = '%s' ", os)
-		// }
-		args, err := SQL_Slice_To_In_Args(option.Os)
-		if err != nil {
-			return nil, fmt.Errorf("转换OS切片为SQLite IN 子句参数失败: %v", err)
-		}
-		query += fmt.Sprintf(" AND tos.os IN %s", args)
-	}
-
-	query += " ORDER BY t.created_at DESC"
-
-	log.Printf("SQL: %s,args:%v", query, args)
-	stmt, err := DB.Prepare(query)
-	if err != nil {
-		log.Printf("准备查询语句失败: %v", err)
-		return nil, fmt.Errorf("准备查询语句失败: %v", err)
-	}
-	defer stmt.Close()
-
-	// 从SQLite数据库获取所有标签
-	rows, err := stmt.Query(args...)
-	if err != nil {
-		log.Printf("执行查询语句失败: %v", err)
-		return nil, fmt.Errorf("获取标签列表失败: %v", err)
-	}
-	defer rows.Close()
-	log.Printf("查询标签列表成功: %+v", rows)
-	// 遍历结果集
-	for rows.Next() {
-		var tag Tag
-		var deletedAt sql.NullTime
-		// var osString string
-
-		err = rows.Scan(
-			&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
-		)
-		if err != nil {
-			log.Printf("扫描标签失败: %v", err)
-			return nil, fmt.Errorf("扫描标签失败: %v", err)
-		}
-
-		// 从关联表获取OS信息
-		// if tag.Os, err = GetTagOSsSQLite(tag.ID); err != nil {
-		// 	log.Printf("获取标签OS失败: %v", err)
-		// 	return nil, fmt.Errorf("获取标签OS失败: %v", err)
-		// }
-
-		// 处理deletedAt字段
-		if deletedAt.Valid {
-			tag.DeletedAt = &deletedAt.Time
-		}
-
-		tags = append(tags, &tag)
-	}
-
-	if err = rows.Err(); err != nil {
-		log.Printf("遍历标签结果集失败: %v", err)
-		return nil, fmt.Errorf("遍历标签结果集失败: %v", err)
-	}
-	log.Printf("获取标签列表成功: %+v\n", tags)
-	return tags, nil
-}
-
-// UpdateTagSQLite 更新标签
-func UpdateTagSQLite(tag *Tag) error {
-	tag.UpdatedAt = time.Now()
-
-	// 更新SQLite数据库中的标签
-	_, err := DB.Exec(
-		"UPDATE tags SET name = ?, description = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		tag.Name, tag.Description, tag.SearchCount, "", tag.UpdatedAt, tag.ID,
-	)
-	if err != nil {
-		return fmt.Errorf("更新标签失败: %v", err)
-	}
-
-	// 先删除现有的OS关系
-	if err := RemoveAllOSFromTagSQLite(tag.ID); err != nil {
-		return fmt.Errorf("删除标签OS关系失败: %v", err)
-	}
-
-	// 重新添加OS关系
-	// for _, os := range tag.Os {
-	// 	if err := AddOSToTagSQLite(tag.ID, os); err != nil {
-	// 		return fmt.Errorf("添加标签OS关系失败: %v", err)
-	// 	}
-	// }
-
-	return nil
-}
-
-// DeleteTagSQLite 删除标签（软删除）
-func DeleteTagSQLite(id uint64) error {
-	now := time.Now()
-
-	// 更新标签的deleted_at字段
-	result, err := DB.Exec(
-		"UPDATE tags SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		now, now, id,
-	)
-	if err != nil {
-		return fmt.Errorf("删除标签失败: %v", err)
-	}
-
-	// 检查是否有行被更新
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("获取删除影响的行数失败: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("tag not found: %s", id)
-	}
-
-	return nil
-}
-
-// CreateCollectionSQLite 创建集合
-func CreateCollectionSQLite(collection *Collection) error {
-	now := time.Now()
-	collection.CreatedAt = now
-	collection.UpdatedAt = now
-	collection.SearchCount = 0
-
-	// 开启事务，确保所有操作要么全部成功，要么全部失败
-	tx, err := DB.Begin()
-	if err != nil {
-		return fmt.Errorf("开启事务失败: %v", err)
-	}
-	defer func() {
-		if err != nil {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Printf("回滚事务失败: %v", rollbackErr)
-			}
-		}
-	}()
-
-	// 保存到SQLite数据库，不指定id字段，让SQLite自动生成
-	result, err := tx.Exec(
-		"INSERT INTO collections (name, description, search_count, os, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		collection.Name, collection.Description, collection.SearchCount, "", collection.CreatedAt, collection.UpdatedAt, collection.DeletedAt,
-	)
-	if err != nil {
-		return fmt.Errorf("创建集合失败: %v", err)
-	}
-
-	// 获取SQLite自动生成的ID
-	id, err := result.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("获取集合ID失败: %v", err)
-	}
-	collection.ID = uint64(id)
-
-	// 保存OS关联关系（在事务中执行）
-	for _, os := range collection.Os {
-		_, err := tx.Exec(
-			"INSERT OR IGNORE INTO collection_os (collection_id, os) VALUES (?, ?)",
-			collection.ID, os,
-		)
-		if err != nil {
-			return fmt.Errorf("添加集合OS关系失败: %v", err)
-		}
-	}
-
-	// 提交事务，所有操作都成功完成
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %v", err)
-	}
-
-	return nil
-}
-
-// GetCollectionSQLite 获取单个集合
-func GetCollectionSQLite(id uint64) (*Collection, error) {
-	// 输入验证
-	if id == 0 {
-		return nil, fmt.Errorf("集合ID不能为空")
-	}
-
-	var collection Collection
-	var osString string
-	var deletedAt sql.NullTime
-
-	// 使用参数化查询，防止SQL注入
-	err := DB.QueryRow(
-		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM collections WHERE id = ? AND deleted_at IS NULL",
-		id,
-	).Scan(
-		&collection.ID, &collection.Name, &collection.Description, &collection.SearchCount, &osString, &collection.CreatedAt, &collection.UpdatedAt, &deletedAt,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("collection not found: %d", id)
-		}
-		return nil, fmt.Errorf("获取集合失败: %v", err)
-	}
-
-	// 从关联表获取OS信息
-	if collection.Os, err = GetCollectionOSsSQLite(id); err != nil {
-		return nil, fmt.Errorf("获取集合OS失败: %v", err)
-	}
-
-	// 处理deletedAt字段
-	if deletedAt.Valid {
-		collection.DeletedAt = &deletedAt.Time
-	}
-
-	return &collection, nil
-}
-
-// GetCollectionsSQLite 获取所有集合
-func GetCollectionsSQLite() ([]*Collection, error) {
-	var collections []*Collection
-
-	// 从SQLite数据库获取所有集合
-	rows, err := DB.Query(
-		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM collections WHERE deleted_at IS NULL ORDER BY created_at DESC",
-	)
-	if err != nil {
-		return nil, fmt.Errorf("获取集合列表失败: %v", err)
-	}
-	defer rows.Close()
-
-	// 遍历结果集
-	for rows.Next() {
-		var collection Collection
-		var osString string
-		var deletedAt sql.NullTime
-
-		err := rows.Scan(
-			&collection.ID, &collection.Name, &collection.Description, &collection.SearchCount, &osString, &collection.CreatedAt, &collection.UpdatedAt, &deletedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("扫描集合失败: %v", err)
-		}
-
-		// 从关联表获取OS信息
-		if collection.Os, err = GetCollectionOSsSQLite(collection.ID); err != nil {
-			return nil, fmt.Errorf("获取集合OS失败: %v", err)
-		}
-
-		// 处理deletedAt字段
-		if deletedAt.Valid {
-			collection.DeletedAt = &deletedAt.Time
-		}
-
-		collections = append(collections, &collection)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("遍历集合结果集失败: %v", err)
-	}
-
-	return collections, nil
-}
-
-// UpdateCollectionSQLite 更新集合
-func UpdateCollectionSQLite(collection *Collection) error {
-	collection.UpdatedAt = time.Now()
-
-	// 更新SQLite数据库中的集合
-	_, err := DB.Exec(
-		"UPDATE collections SET name = ?, description = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		collection.Name, collection.Description, collection.SearchCount, "", collection.UpdatedAt, collection.ID,
-	)
-	if err != nil {
-		return fmt.Errorf("更新集合失败: %v", err)
-	}
-
-	// 先删除现有的OS关系
-	if err := RemoveAllOSFromCollectionSQLite(collection.ID); err != nil {
-		return fmt.Errorf("删除集合OS关系失败: %v", err)
-	}
-
-	// 重新添加OS关系
-	for _, os := range collection.Os {
-		if err := AddOSToCollectionSQLite(collection.ID, os); err != nil {
-			return fmt.Errorf("添加集合OS关系失败: %v", err)
-		}
-	}
-
-	return nil
-}
-
-// DeleteCollectionSQLite 删除集合（软删除）
-func DeleteCollectionSQLite(id uint64) error {
-	now := time.Now()
-
-	// 更新集合的deleted_at字段
-	result, err := DB.Exec(
-		"UPDATE collections SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		now, now, id,
-	)
-	if err != nil {
-		return fmt.Errorf("删除集合失败: %v", err)
-	}
-
-	// 检查是否有行被更新
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("获取删除影响的行数失败: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("collection not found: %d", id)
-	}
-
-	return nil
-}
-
-// CreateCommandSQLite 创建命令
-func CreateCommandSQLite(cmd *Command) error {
-	log.Printf("CreateCommandSQLite请求参数: %+v\n", cmd)
-	now := time.Now()
-	cmd.CreatedAt = now
-	cmd.UpdatedAt = now
-	cmd.CopyCounts = 0
-	cmd.SearchCount = 0
-
-	// 检查命令名称是否已存在
-	var exists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM commands WHERE name = ? AND deleted_at IS NULL)", cmd.Name).Scan(&exists)
-	if err != nil {
-		log.Printf("检查命令是否存在失败: %v", err)
-		return fmt.Errorf("检查命令是否存在失败: %v", err)
-	}
-	if exists {
-		log.Printf("命令[%s]已存在", cmd.Name)
-		return fmt.Errorf("命令[%s]已存在", cmd.Name)
-	}
-
-	// 开启事务，确保所有操作要么全部成功，要么全部失败
-	tx, err := DB.Begin()
-	if err != nil {
-		return fmt.Errorf("开启事务失败: %v", err)
-	}
-	defer func() {
-		if err != nil {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Printf("回滚事务失败: %v", rollbackErr)
-			}
-		}
-	}()
-
-	// 保存命令基本信息到SQLite数据库，不指定id字段，让SQLite自动生成
-	result, err := tx.Exec(
-		"INSERT INTO commands (name, content, description, copy_count, search_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, cmd.CreatedAt, cmd.UpdatedAt,
-	)
-	if err != nil {
-		return fmt.Errorf("创建命令失败: %v", err)
-	}
-
-	// 获取SQLite自动生成的ID
-	id, err := result.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("获取命令ID失败: %v", err)
-	}
-	cmd.ID = uint64(id)
-
-	log.Printf("创建命令成功, ID: %d", id)
-	// 保存命令与标签的多对多关系（在事务中执行）
-	for _, tagID := range cmd.TagIDs {
-		_, err = tx.Exec(
-			"INSERT OR IGNORE INTO command_tags (command_id, tag_id) VALUES (?, ?)",
-			cmd.ID, tagID,
-		)
-		if err != nil {
-			return fmt.Errorf("添加命令标签关系失败: %v", err)
-		}
-	}
-	log.Printf("添加命令标签关系成功, 命令ID: %d, 标签ID: %v", cmd.ID, cmd.TagIDs)
-	// 保存命令与集合的多对多关系（在事务中执行）
-	for _, collectionID := range cmd.CollectionIDs {
-		_, err = tx.Exec(
-			"INSERT OR IGNORE INTO command_collections (command_id, collection_id) VALUES (?, ?)",
-			cmd.ID, collectionID,
-		)
-		if err != nil {
-			return fmt.Errorf("添加命令集合关系失败: %v", err)
-		}
-	}
-	log.Printf("添加命令集合关系成功, 命令ID: %d, 集合ID: %v", cmd.ID, cmd.CollectionIDs)
-
-	// 保存OS关联关系（在事务中执行）
-	for _, os := range cmd.Os {
-		_, err = tx.Exec(
-			"INSERT OR IGNORE INTO command_os (command_id, os) VALUES (?, ?)",
-			cmd.ID, os,
-		)
-		if err != nil {
-			return fmt.Errorf("添加命令OS关系失败: %v", err)
-		}
-	}
-	log.Printf("添加命令OS关系成功, 命令ID: %d, OS: %v", cmd.ID, cmd.Os)
-
-	// 提交事务，所有操作都成功完成
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %v", err)
-	}
-
-	log.Printf("创建命令事物完成, ID: %d", cmd.ID)
-	return nil
-}
-
-// GetCommandSQLite 获取单个命令
-func GetCommandSQLite(id uint64) (*Command, error) {
-	// 输入验证
-	if id == 0 {
-		return nil, fmt.Errorf("命令ID不能为空")
-	}
-
-	var cmd Command
-	var deletedAt sql.NullTime
-	var osString string
-
-	// 使用参数化查询，防止SQL注入
-	err := DB.QueryRow(
-		"SELECT id, name, content, description, copy_count, search_count, os, created_at, updated_at, deleted_at FROM commands WHERE id = ? AND deleted_at IS NULL",
-		id,
-	).Scan(
-		&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &osString, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("command not found: %d", id)
-		}
-		return nil, fmt.Errorf("获取命令失败: %v", err)
-	}
-
-	// 处理deletedAt字段
-	if deletedAt.Valid {
-		cmd.DeletedAt = &deletedAt.Time
-	}
-
-	// 获取命令关联的标签ID
-	if cmd.TagIDs, err = GetTagIDsByCommandIDSQLite(id); err != nil {
-		return nil, fmt.Errorf("获取命令标签ID失败: %v", err)
-	}
-
-	// 获取命令关联的集合ID
-	if cmd.CollectionIDs, err = GetCollectionIDsByCommandIDSQLite(id); err != nil {
-		return nil, fmt.Errorf("获取命令集合ID失败: %v", err)
-	}
-
-	// 从关联表获取OS信息
-	if cmd.Os, err = GetCommandOSsSQLite(id); err != nil {
-		return nil, fmt.Errorf("获取命令OS失败: %v", err)
-	}
-
-	return &cmd, nil
-}
-
-func GetCommandsByTagIDs(ids []uint64) ([]*Command, error) {
-	if len(ids) == 0 {
-		return []*Command{}, nil
-	}
-	var commands []*Command
-	query := `
-	SELECT cmd.* FROM commands cmd
-	INNER JOIN command_tags ct ON cmd.id = ct.command_id
-	WHERE cmd.deleted_at IS NULL
-	AND ct.tag_id IN %s ;
-	`
-	args, err := SQL_Slice_To_In_Args(ids)
-	if err != nil {
-		return nil, fmt.Errorf("转换ID列表为IN参数失败: %v", err)
-	}
-	log.Printf("GetCommandsByTagIDs SQL: %s", query)
-	log.Printf("GetCommandsByTagIDs args: %s", args)
-	query = fmt.Sprintf(query, args)
-	rows, err := DB.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("获取命令列表失败: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var cmd Command
-		var deletedAt sql.NullTime
-		// var osString string
-
-		err := rows.Scan(
-			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("扫描命令失败: %v", err)
-		}
-
-		// 处理deletedAt字段
-		if deletedAt.Valid {
-			cmd.DeletedAt = &deletedAt.Time
-		}
-
-		commands = append(commands, &cmd)
-	}
-	return commands, nil
-}
-
-// GetCommandsSQLite 获取所有命令
-func GetCommandsSQLite(option Option) ([]*Command, error) {
-	var commands []*Command
-
-	// 从SQLite数据库获取所有命令的基本信息
-	// 构建查询条件
-	query := "SELECT id, name, content, description, copy_count, search_count, created_at, updated_at, deleted_at FROM commands c JOIN command_os cs WHERE deleted_at IS NULL"
-	args := []interface{}{}
-
-	// 添加OS条件
-
-	if option.Name != "" {
-		query += " AND name LIKE ?"
-		args = append(args, "%"+option.Name+"%")
-	}
-	if option.ID != 0 {
-		query += " AND id = ?"
-		args = append(args, option.ID)
-	}
-	if len(option.Os) > 0 {
-		osPlaceholders := make([]string, len(option.Os))
-		for i, os := range option.Os {
-			osPlaceholders[i] = "?"
-			args = append(args, os)
-		}
-		args, err := SQL_Slice_To_In_Args(option.Os)
-		if err != nil {
-			return nil, fmt.Errorf("转换ID列表为IN参数失败: %v", err)
-		}
-		query += fmt.Sprintf(" AND cs.os IN %s ;", args)
-	}
-
-	log.Printf("GetCommandsSQLite SQL: %s", query)
-	log.Printf("GetCommandsSQLite args: %s", args)
-	rows, err := DB.Query(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("获取命令列表失败: %v", err)
-	}
-	defer rows.Close()
-
-	// 遍历结果集
-	for rows.Next() {
-		var cmd Command
-		var deletedAt sql.NullTime
-		// var osString string
-
-		err := rows.Scan(
-			&cmd.ID, &cmd.Name, &cmd.Content, &cmd.Description, &cmd.CopyCounts, &cmd.SearchCount, &cmd.CreatedAt, &cmd.UpdatedAt, &deletedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("扫描命令失败: %v", err)
-		}
-
-		// 处理deletedAt字段
-		if deletedAt.Valid {
-			cmd.DeletedAt = &deletedAt.Time
-		}
-
-		// 获取命令关联的标签ID
-		if cmd.TagIDs, err = GetTagIDsByCommandIDSQLite(cmd.ID); err != nil {
-			return nil, fmt.Errorf("获取命令标签ID失败: %v", err)
-		}
-
-		// 获取命令关联的集合ID
-		if cmd.CollectionIDs, err = GetCollectionIDsByCommandIDSQLite(cmd.ID); err != nil {
-			return nil, fmt.Errorf("获取命令集合ID失败: %v", err)
-		}
-
-		// 从关联表获取OS信息
-		if cmd.Os, err = GetCommandOSsSQLite(cmd.ID); err != nil {
-			return nil, fmt.Errorf("获取命令OS失败: %v", err)
-		}
-
-		commands = append(commands, &cmd)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("遍历命令结果集失败: %v", err)
-	}
-
-	return commands, nil
-}
-
-// UpdateCommandSQLite 更新命令
-func UpdateCommandSQLite(cmd *Command) error {
-	// 输入验证
-	if cmd == nil {
-		return fmt.Errorf("命令对象不能为空")
-	}
-	if cmd.ID == 0 {
-		return fmt.Errorf("命令ID不能为空")
-	}
-
-	cmd.UpdatedAt = time.Now()
-
-	// 使用参数化查询，防止SQL注入
-	_, err := DB.Exec(
-		"UPDATE commands SET name = ?, content = ?, description = ?, copy_count = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		cmd.Name, cmd.Content, cmd.Description, cmd.CopyCounts, cmd.SearchCount, 0, cmd.UpdatedAt, cmd.ID,
-	)
-	if err != nil {
-		return fmt.Errorf("更新命令失败: %v", err)
-	}
-
-	// 先删除现有的OS关系
-	if err := RemoveAllOSFromCommandSQLite(cmd.ID); err != nil {
-		return fmt.Errorf("删除命令OS关系失败: %v", err)
-	}
-
-	// 重新添加OS关系
-	for _, os := range cmd.Os {
-		if err := AddOSToCommandSQLite(cmd.ID, os); err != nil {
-			return fmt.Errorf("添加命令OS关系失败: %v", err)
-		}
-	}
-
-	// 先删除现有的命令与标签的关系
-	if err := RemoveAllTagsFromCommandSQLite(cmd.ID); err != nil {
-		return fmt.Errorf("删除命令标签关系失败: %v", err)
-	}
-
-	// 重新添加命令与标签的关系
-	for _, tagID := range cmd.TagIDs {
-		if err := AddTagToCommandSQLite(cmd.ID, tagID); err != nil {
-			return fmt.Errorf("添加命令标签关系失败: %v", err)
-		}
-	}
-
-	// 先删除现有的命令与集合的关系
-	if err := RemoveAllCollectionsFromCommandSQLite(cmd.ID); err != nil {
-		return fmt.Errorf("删除命令集合关系失败: %v", err)
-	}
-
-	// 重新添加命令与集合的关系
-	for _, collectionID := range cmd.CollectionIDs {
-		if err := AddCollectionToCommandSQLite(cmd.ID, collectionID); err != nil {
-			return fmt.Errorf("添加命令集合关系失败: %v", err)
-		}
-	}
-
-	return nil
-}
-
-// DeleteCommandSQLite 删除命令（软删除）
-func DeleteCommandSQLite(id uint64) error {
-	// 输入验证
-	if id == 0 {
-		return fmt.Errorf("命令ID不能为空")
-	}
-
-	now := time.Now()
-
-	// 使用参数化查询，防止SQL注入
-	result, err := DB.Exec(
-		"UPDATE commands SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		now, now, id,
-	)
-	if err != nil {
-		return fmt.Errorf("删除命令失败: %v", err)
-	}
-
-	// 检查是否有行被更新
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("获取删除影响的行数失败: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("command not found: %d", id)
-	}
-
-	return nil
-}
-
 // 数据库迁移相关函数
 
 // MigrateOSFieldsSQLite 迁移OS字段到关联表（可选执行）
@@ -1348,39 +544,151 @@ func RemoveAllTagsFromCommandSQLite(commandID uint64) error {
 	return nil
 }
 
-// GetTagIDsByCommandIDSQLite 获取命令的所有标签ID
-func GetTagIDsByCommandIDSQLite(commandID uint64) ([]uint64, error) {
-	// 输入验证
-	if commandID == 0 {
-		return nil, fmt.Errorf("commandID不能为空")
+func FillCommandRelations(commands []*Command) error {
+	if len(commands) == 0 {
+		return nil
 	}
 
-	var tagIDs []uint64
+	commandIDs := make([]uint64, len(commands))
+	for i, cmd := range commands {
+		commandIDs[i] = cmd.ID
+	}
 
-	// 使用参数化查询，防止SQL注入
-	rows, err := DB.Query(
-		"SELECT tag_id FROM command_tags WHERE command_id = ?",
-		commandID,
-	)
+	tagMap, err := GetTagIDsByCommandIDsSQLite(commandIDs)
 	if err != nil {
-		return nil, fmt.Errorf("获取命令标签ID失败: %v", err)
+		return fmt.Errorf("批量获取命令标签ID失败: %v", err)
+	}
+	collectionMap, err := GetCollectionIDsByCommandIDsSQLite(commandIDs)
+	if err != nil {
+		return fmt.Errorf("批量获取命令集合ID失败: %v", err)
+	}
+	osMap, err := GetCommandOSsByCommandIDsSQLite(commandIDs)
+	if err != nil {
+		return fmt.Errorf("批量获取命令OS失败: %v", err)
+	}
+
+	for _, cmd := range commands {
+		cmd.TagIDs = tagMap[cmd.ID]
+		cmd.CollectionIDs = collectionMap[cmd.ID]
+		cmd.Os = osMap[cmd.ID]
+	}
+
+	return nil
+}
+
+func GetTagIDsByCommandIDsSQLite(commandIDs []uint64) (map[uint64][]uint64, error) {
+	result := make(map[uint64][]uint64)
+	if len(commandIDs) == 0 {
+		return result, nil
+	}
+
+	query := "SELECT command_id, tag_id FROM command_tags WHERE command_id IN ("
+	args := make([]interface{}, len(commandIDs))
+	for i, id := range commandIDs {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args[i] = id
+	}
+	query += ")"
+
+	rows, err := DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("批量获取命令标签ID失败: %v", err)
 	}
 	defer rows.Close()
 
-	// 遍历结果集
 	for rows.Next() {
-		var tagID uint64
-		if err := rows.Scan(&tagID); err != nil {
-			return nil, fmt.Errorf("扫描标签ID失败: %v", err)
+		var commandID, tagID uint64
+		if err = rows.Scan(&commandID, &tagID); err != nil {
+			return nil, fmt.Errorf("扫描命令标签ID失败: %v", err)
 		}
-		tagIDs = append(tagIDs, tagID)
+		result[commandID] = append(result[commandID], tagID)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("遍历标签ID结果集失败: %v", err)
+		return nil, fmt.Errorf("遍历命令标签ID结果集失败: %v", err)
 	}
 
-	return tagIDs, nil
+	return result, nil
+}
+
+func GetCollectionIDsByCommandIDsSQLite(commandIDs []uint64) (map[uint64][]uint64, error) {
+	result := make(map[uint64][]uint64)
+	if len(commandIDs) == 0 {
+		return result, nil
+	}
+
+	query := "SELECT command_id, collection_id FROM command_collections WHERE command_id IN ("
+	args := make([]interface{}, len(commandIDs))
+	for i, id := range commandIDs {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args[i] = id
+	}
+	query += ")"
+
+	rows, err := DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("批量获取命令集合ID失败: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var commandID, collectionID uint64
+		if err = rows.Scan(&commandID, &collectionID); err != nil {
+			return nil, fmt.Errorf("扫描命令集合ID失败: %v", err)
+		}
+		result[commandID] = append(result[commandID], collectionID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历命令集合ID结果集失败: %v", err)
+	}
+
+	return result, nil
+}
+
+func GetCommandOSsByCommandIDsSQLite(commandIDs []uint64) (map[uint64][]string, error) {
+	result := make(map[uint64][]string)
+	if len(commandIDs) == 0 {
+		return result, nil
+	}
+
+	query := "SELECT command_id, os FROM command_os WHERE command_id IN ("
+	args := make([]interface{}, len(commandIDs))
+	for i, id := range commandIDs {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args[i] = id
+	}
+	query += ")"
+
+	rows, err := DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("批量获取命令OS失败: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var commandID uint64
+		var os string
+		if err = rows.Scan(&commandID, &os); err != nil {
+			return nil, fmt.Errorf("扫描命令OS失败: %v", err)
+		}
+		result[commandID] = append(result[commandID], os)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历命令OS结果集失败: %v", err)
+	}
+
+	return result, nil
 }
 
 // 管理命令与集合的多对多关系

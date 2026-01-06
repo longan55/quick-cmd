@@ -26,6 +26,18 @@ export function DeleteTag(arg1) {
   return window['go']['main']['App']['DeleteTag'](arg1);
 }
 
+export function GetAllCollectionsIDAndName() {
+  return window['go']['main']['App']['GetAllCollectionsIDAndName']();
+}
+
+export function GetAllCommandsIDAndName() {
+  return window['go']['main']['App']['GetAllCommandsIDAndName']();
+}
+
+export function GetAllTagsIDAndName() {
+  return window['go']['main']['App']['GetAllTagsIDAndName']();
+}
+
 export function GetCollection(arg1) {
   return window['go']['main']['App']['GetCollection'](arg1);
 }
