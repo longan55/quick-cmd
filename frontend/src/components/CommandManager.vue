@@ -2,10 +2,8 @@
   <div class="app-container">
     <!-- 顶部菜单栏 -->
     <TopMenuBar 
-      :menuItems="menuItems"
-      :activeMenu="activeMenu"
-      @toggle-active-menu="toggleActiveMenu"
-      @toggle-add-interface="toggleAddInterface"
+      :menuType="menuType"
+      @update:menuType="menuType = $event"
       @toggle-settings-modal="toggleSettingsModal"
       @toggle-about-modal="toggleAboutModal"
     />
@@ -83,7 +81,7 @@ const activeAddInterface = ref('');
 // 选中的项目
 const selectedItem = ref(null);
 // 当前激活的菜单ID
-const activeMenu = ref('home');
+const activeMenu = ref('0');
 // 当前菜单类型（'tags' | 'collections' | 'all'）
 const menuType = ref('tags');
 // 系统类型筛选数组
@@ -211,8 +209,8 @@ function buildSortParams() {
 
 // 切换活动菜单
 function toggleActiveMenu(menuId) {
-  // 更新当前激活的菜单ID
-  activeMenu.value = menuId;
+  // 更新当前激活的菜单ID，确保是字符串类型
+  activeMenu.value = String(menuId);
   
   // 构建Option参数
   const option = {
@@ -284,8 +282,8 @@ function toggleSystemType(type) {
     systemType.value.splice(index, 1);
   }
   
-  // 清空已选的菜单项ID，将其设置为默认的'home'
-  activeMenu.value = 'home';
+  // 清空已选的菜单项ID，将其设置为默认的第一个选项'0'
+  activeMenu.value = '0';
   
   // 调用GetOptions获取数据
   const option = {
@@ -597,9 +595,9 @@ onUnmounted(() => {
 });
 
 // 监听菜单类型变化
-watch(() => menuType.value, () => {
-  // 清空已选的菜单项ID，将其设置为默认的'home'
-  activeMenu.value = 'home';
+watch(menuType, () => {
+  // 切换菜单类型时，默认选择第一个选项(ID=0)
+  activeMenu.value = '0'; // 所有菜单类型的第一个选项ID都为0
   
   // 构建Option参数
   const option = {

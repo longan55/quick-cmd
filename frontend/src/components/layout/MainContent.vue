@@ -211,7 +211,7 @@
     <div v-else class="query-interface">
       <div class="interface-header">
         <h2>
-          {{ activeMenu === 'all-tags' || activeMenu === 'all-collections' ? (menuType === 'tags' ? '标签列表' : menuType === 'collections' ? '集合列表' : '命令列表') : '命令列表' }}
+          {{ activeMenu === '0' ? (menuType === 'tags' ? '标签列表' : menuType === 'collections' ? '集合列表' : '命令列表') : '命令列表' }}
         </h2>
         
         <div class="interface-actions">
@@ -222,7 +222,7 @@
       </div>
       
       <!-- 命令列表 -->
-      <div v-if="menuType === 'all' || (menuType === 'tags' && activeMenu !== 'all-tags') || (menuType === 'collections' && activeMenu !== 'all-collections')" class="table-container">
+      <div v-if="menuType === 'all' || (menuType === 'tags' && activeMenu !== '0') || (menuType === 'collections' && activeMenu !== '0')" class="table-container">
         <table class="command-table">
           <thead>
             <tr>
@@ -269,8 +269,8 @@
         </table>
       </div>
       
-      <!-- 标签/集合列表 -->
-      <div v-else class="table-container">
+      <!-- 标签列表 -->
+      <div v-else-if="menuType === 'tags' && activeMenu === '0'" class="table-container">
         <table class="item-table">
           <thead>
             <tr>
@@ -282,7 +282,38 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in menuType === 'tags' ? tags : collections" :key="item.id">
+            <tr v-for="item in tags.filter(tag => tag.id !== 0)" :key="item.id">
+              <td>{{ item.id }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.description }}</td>
+              <td>{{ getItemCommandCount(item.id) }}</td>
+              <td class="action-buttons">
+                <button class="edit-button" @click="$emit('edit-item', item)">
+                  编辑
+                </button>
+                <button class="delete-button" @click="$emit('delete-item', item)">
+                  删除
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- 集合列表 -->
+      <div v-else-if="menuType === 'collections' && activeMenu === '0'" class="table-container">
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>名称</th>
+              <th>描述</th>
+              <th>命令数量</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in collections.filter(col => col.id !== 0)" :key="item.id">
               <td>{{ item.id }}</td>
               <td>{{ item.name }}</td>
               <td>{{ item.description }}</td>

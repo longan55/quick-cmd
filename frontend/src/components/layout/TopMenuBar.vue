@@ -1,6 +1,17 @@
 <template>
   <div class="top-menu-bar">
     <div class="menu-options">
+      <button 
+        v-for="menu in topMenuItems" 
+        :key="menu.id" 
+        class="menu-button" 
+        @click="$emit('update:menuType', menu.id === 'commands' ? 'all' : menu.id)"
+        :class="{ active: (menu.id === 'commands' && menuType === 'all') || (menu.id === menuType) }"
+      >
+        {{ menu.name }}
+      </button>
+    </div>
+    <div class="menu-options">
       <button class="menu-button" @click="$emit('toggle-settings-modal')">设置</button>
       <button class="menu-button" @click="$emit('toggle-about-modal')">关于</button>
     </div>
@@ -9,28 +20,28 @@
 
 <script setup>
 // 导入Vue 3的组件API
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, ref } from 'vue';
 
 // 定义组件属性
 const props = defineProps({
-  menuItems: {
-    type: Array,
-    default: () => [
-      { id: 'commands', name: '指令管理' },
-      { id: 'collections', name: '集合管理' },
-      { id: 'tags', name: '标签管理' }
-    ]
-  },
-  activeMenu: {
+  menuType: {
     type: String,
-    default: 'commands'
+    default: 'tags'
   }
 });
+
+// 定义顶部菜单项
+const topMenuItems = ref([
+  { id: 'commands', name: '指令管理' },
+  { id: 'collections', name: '集合管理' },
+  { id: 'tags', name: '标签管理' }
+]);
 
 // 定义组件事件
 const emit = defineEmits([
   'change-menu',
   'open-add-interface',
+  'update:menuType',
   'toggle-settings-modal',
   'toggle-about-modal'
 ]);

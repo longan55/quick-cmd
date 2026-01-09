@@ -105,7 +105,7 @@
           :key="tag.id" 
           class="menu-button" 
           @click="emit('toggle-active-menu', tag.id)" 
-          :class="{ active: activeMenu === tag.id }"
+          :class="{ active: activeMenu === String(tag.id) }"
         >
           <!-- <span class="menu-icon">{{ tag.icon }}</span> -->
           <span class="menu-text">{{ tag.name }}</span>
@@ -119,7 +119,7 @@
           :key="collection.id" 
           class="menu-button" 
           @click="emit('toggle-active-menu', collection.id)" 
-          :class="{ active: activeMenu === collection.id }"
+          :class="{ active: activeMenu === String(collection.id) }"
         >
           <span class="menu-text">{{ collection.name }}</span>
         </button>
@@ -132,7 +132,7 @@
           :key="menu.id" 
           class="menu-button" 
           @click="emit('toggle-active-menu', menu.id)" 
-          :class="{ active: activeMenu === menu.id }"
+          :class="{ active: activeMenu === String(menu.id) }"
         >
           <span class="menu-icon">{{ menu.icon }}</span>
           <span class="menu-text">{{ menu.name }}</span>
@@ -254,6 +254,8 @@ function toggleSystemType(type) {
 function changeMenuType(type) {
   // 触发菜单类型更新事件
   emit('update:menuType', type);
+  // 无论菜单类型是否变化，都重置为第一个选项（ID=0）
+  emit('toggle-active-menu', 0);
 }
 </script>
 
