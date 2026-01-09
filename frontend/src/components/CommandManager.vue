@@ -419,8 +419,6 @@ async function addCollection(collection) {
   try {
     // 调用后端接口创建集合
     await CreateCollection(collection);
-    // 将新集合添加到集合列表
-    collections.value.push(collection);
   } catch (error) {
     console.error('创建集合失败:', error);
     alert('创建集合失败: ' + error.message);
@@ -432,8 +430,6 @@ async function addTag(tag) {
   try {
     // 调用后端接口创建标签
     await CreateTag(tag);
-    // 将新标签添加到标签列表
-    tags.value.push(tag);
   } catch (error) {
     console.error('创建标签失败:', error);
     alert('创建标签失败: ' + error.message);

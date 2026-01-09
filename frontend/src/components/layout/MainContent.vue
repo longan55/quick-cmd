@@ -304,7 +304,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits, onMounted } from 'vue';
+import { ref, computed, defineProps, defineEmits, onMounted, watch } from 'vue';
 import { CreateCommand, GetAllCommandsIDAndName, GetAllTagsIDAndName, GetAllCollectionsIDAndName } from '../../../wailsjs/go/main/App';
 
 const props = defineProps({
@@ -398,6 +398,18 @@ onMounted(async () => {
     console.error('获取数据失败:', error);
   }
 });
+
+// 监听activeAddInterface的变化，当切换到不同界面时刷新对应数据
+watch(
+  () => props.activeAddInterface,
+  (newVal) => {
+    if (newVal === 'tag' || newVal === 'collection') {
+      refreshAllCommands();
+    } else if (newVal === 'command') {
+      refreshAllTagsAndCollections();
+    }
+  }
+);
 
 // 计算属性：根据搜索关键词过滤命令
 const filteredCommands = computed(() => {
@@ -503,6 +515,9 @@ function saveCollection() {
   // 重置表单并关闭界面
   resetCollectionForm();
   emit('toggle-add-interface', 'collection');
+  
+  // 通知父组件刷新数据
+  emit('refresh-data');
 }
 
 // 保存标签
@@ -526,6 +541,9 @@ function saveTag() {
   // 重置表单并关闭界面
   resetTagForm();
   emit('toggle-add-interface', 'tag');
+  
+  // 通知父组件刷新数据
+  emit('refresh-data');
 }
 
 // 重置表单
@@ -563,6 +581,30 @@ function resetTagForm() {
     systemType: [],
     commandIds: []
   };
+}
+
+// 刷新所有指令数据
+async function refreshAllCommands() {
+  try {
+    const commands = await GetAllCommandsIDAndName();
+    allCommands.value = commands;
+  } catch (error) {
+    console.error('刷新指令数据失败:', error);
+  }
+}
+
+// 刷新所有标签和集合数据
+async function refreshAllTagsAndCollections() {
+  try {
+    const [tags, collections] = await Promise.all([
+      GetAllTagsIDAndName(),
+      GetAllCollectionsIDAndName()
+    ]);
+    allTags.value = tags;
+    allCollections.value = collections;
+  } catch (error) {
+    console.error('刷新标签和集合数据失败:', error);
+  }
 }
 </script>
 

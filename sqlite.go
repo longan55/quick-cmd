@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -21,13 +22,29 @@ var (
 
 // InitSqlite 初始化SQLite数据库
 func InitSqlite() {
+	// 检查数据库文件是否存在
+	_, err := os.Stat("quick-cmd.db")
+	fileExists := err == nil
+
 	// 打开SQLite数据库，使用文件存储而不是内存存储
-	db, err := sql.Open("sqlite3", "file:quick-cmd.db?cache=shared&mode=rw&_foreign_keys=1")
+	// 使用mode=rwc模式，当文件不存在时会自动创建
+	db, err := sql.Open("sqlite3", "file:quick-cmd.db?cache=shared&mode=rwc&_foreign_keys=1")
 	if err != nil {
 		panic(err)
 	}
 	DB = db
 	DB.SetMaxOpenConns(1)
+
+	// 如果文件不存在，先创建数据库文件
+	if !fileExists {
+		log.Println("数据库文件不存在，正在创建...")
+		// 执行一个空查询来触发数据库文件的创建
+		if _, err := DB.Exec("PRAGMA foreign_keys = ON"); err != nil {
+			panic(fmt.Errorf("创建数据库文件失败: %v", err))
+		}
+		log.Println("数据库文件创建成功")
+	}
+
 	// 创建所有必需的表
 	if err := createTables(); err != nil {
 		panic(fmt.Errorf("创建表失败: %v", err))
