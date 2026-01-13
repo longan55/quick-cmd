@@ -39,6 +39,7 @@ func (a *App) startup(ctx context.Context) {
 
 // GetMenuItems returns the menu items for the application
 func (a *App) GetMenuItems() map[string]interface{} {
+
 	return nil
 }
 

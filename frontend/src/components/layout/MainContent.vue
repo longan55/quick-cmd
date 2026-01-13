@@ -3,7 +3,7 @@
     <!-- 新增指令界面 -->
     <div v-if="activeAddInterface === 'command'" class="add-interface">
       <div class="interface-header">
-        <h2>新增指令</h2>
+        <h2>新增指令1</h2>
         <button class="close-button" @click="$emit('toggle-add-interface', 'command')">×</button>
       </div>
       
@@ -282,7 +282,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in tags.filter(tag => tag.id !== 0)" :key="item.id">
+            <tr v-for="item in tags" :key="item.id">
               <td>{{ item.id }}</td>
               <td>{{ item.name }}</td>
               <td>{{ item.description }}</td>
@@ -313,7 +313,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in collections.filter(col => col.id !== 0)" :key="item.id">
+            <tr v-for="item in collections" :key="item.id">
               <td>{{ item.id }}</td>
               <td>{{ item.name }}</td>
               <td>{{ item.description }}</td>
@@ -369,6 +369,18 @@ const props = defineProps({
   }
 });
 
+// 监听menuType和activeMenu的变化，输出日志
+watch(
+  [() => props.menuType, () => props.activeMenu],
+  ([newMenuType, newActiveMenu]) => {
+    console.log('MainContent.vue: menuType变化为:', newMenuType, 'activeMenu变化为:', newActiveMenu);
+    console.log('MainContent.vue: 命令列表条件:', newMenuType === 'all' || (newMenuType === 'tags' && newActiveMenu !== '0') || (newMenuType === 'collections' && newActiveMenu !== '0'));
+    console.log('MainContent.vue: 标签列表条件:', newMenuType === 'tags' && newActiveMenu === '0');
+    console.log('MainContent.vue: 集合列表条件:', newMenuType === 'collections' && newActiveMenu === '0');
+  },
+  { immediate: true }
+);
+
 const emit = defineEmits([
   'toggle-add-interface',
   'update:searchKeyword',
@@ -415,20 +427,20 @@ const allCommands = ref([]);
 const allTags = ref([]);
 const allCollections = ref([]);
 
-onMounted(async () => {
-  try {
-    const [commands, tags, collections] = await Promise.all([
-      GetAllCommandsIDAndName(),
-      GetAllTagsIDAndName(),
-      GetAllCollectionsIDAndName()
-    ]);
-    allCommands.value = commands;
-    allTags.value = tags;
-    allCollections.value = collections;
-  } catch (error) {
-    console.error('获取数据失败:', error);
-  }
-});
+// onMounted(async () => {
+//   try {
+//     const [commands, tags, collections] = await Promise.all([
+//       GetAllCommandsIDAndName(),
+//       GetAllTagsIDAndName(),
+//       GetAllCollectionsIDAndName()
+//     ]);
+//     allCommands.value = commands;
+//     allTags.value = tags;
+//     allCollections.value = collections;
+//   } catch (error) {
+//     console.error('获取数据失败:', error);
+//   }
+// });
 
 // 监听activeAddInterface的变化，当切换到不同界面时刷新对应数据
 watch(

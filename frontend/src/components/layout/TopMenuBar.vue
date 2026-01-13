@@ -1,17 +1,6 @@
 <template>
   <div class="top-menu-bar">
     <div class="menu-options">
-      <button 
-        v-for="menu in topMenuItems" 
-        :key="menu.id" 
-        class="menu-button" 
-        @click="$emit('update:menuType', menu.id === 'commands' ? 'all' : menu.id)"
-        :class="{ active: (menu.id === 'commands' && menuType === 'all') || (menu.id === menuType) }"
-      >
-        {{ menu.name }}
-      </button>
-    </div>
-    <div class="menu-options">
       <button class="menu-button" @click="$emit('toggle-settings-modal')">设置</button>
       <button class="menu-button" @click="$emit('toggle-about-modal')">关于</button>
     </div>
