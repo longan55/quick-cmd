@@ -207,6 +207,212 @@
       </div>
     </div>
     
+    <!-- 编辑命令界面 -->
+    <div v-if="activeEditInterface === 'command'" class="add-interface">
+      <div class="interface-header">
+        <h2>编辑指令</h2>
+        <button class="close-button" @click="$emit('toggle-edit-interface', 'command')">×</button>
+      </div>
+      
+      <div class="form-container">
+        <div class="form-group">
+          <label for="edit-command-name">指令名称</label>
+          <input type="text" id="edit-command-name" v-model="editCommand.name" placeholder="请输入指令名称" />
+        </div>
+        
+        <div class="form-group">
+          <label for="edit-command-content">指令内容</label>
+          <textarea id="edit-command-content" v-model="editCommand.content" placeholder="请输入指令内容" rows="4"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="edit-command-description">指令描述</label>
+          <textarea id="edit-command-description" v-model="editCommand.description" placeholder="请输入指令描述" rows="2"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>所属标签</label>
+          <el-select
+            v-model="editCommand.tags"
+            multiple
+            filterable
+            placeholder="请选择标签"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="tag in tags"
+              :key="tag.id"
+              :label="`[${tag.id}] ${tag.name}`"
+              :value="tag.id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="form-group">
+          <label>所属集合</label>
+          <el-select
+            v-model="editCommand.collections"
+            multiple
+            filterable
+            placeholder="请选择集合"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="collection in collections"
+              :key="collection.id"
+              :label="`[${collection.id}] ${collection.name}`"
+              :value="collection.id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="form-group">
+          <label>适用系统</label>
+          <div class="system-selector">
+            <label class="system-option">
+              <input type="checkbox" value="windows" v-model="editCommand.systemType" />
+              <span>Windows</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="linux" v-model="editCommand.systemType" />
+              <span>Linux</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="mac" v-model="editCommand.systemType" />
+              <span>Mac</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button class="cancel-button" @click="$emit('toggle-edit-interface', 'command')">取消</button>
+          <button class="save-button" @click="saveEditCommand">保存</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 编辑标签界面 -->
+    <div v-else-if="activeEditInterface === 'tag'" class="add-interface">
+      <div class="interface-header">
+        <h2>编辑标签</h2>
+        <button class="close-button" @click="$emit('toggle-edit-interface', 'tag')">×</button>
+      </div>
+      
+      <div class="form-container">
+        <div class="form-group">
+          <label for="edit-tag-name">标签名称</label>
+          <input type="text" id="edit-tag-name" v-model="editTag.name" placeholder="请输入标签名称" />
+        </div>
+        
+        <div class="form-group">
+          <label for="edit-tag-description">标签描述</label>
+          <textarea id="edit-tag-description" v-model="editTag.description" placeholder="请输入标签描述" rows="2"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>关联指令</label>
+          <el-select
+            v-model="editTag.commandIds"
+            multiple
+            filterable
+            placeholder="请选择关联指令"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cmd in commands"
+              :key="cmd.id"
+              :label="`[${cmd.id}] ${cmd.name}`"
+              :value="cmd.id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="form-group">
+          <label>适用系统</label>
+          <div class="system-selector">
+            <label class="system-option">
+              <input type="checkbox" value="windows" v-model="editTag.systemType" />
+              <span>Windows</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="linux" v-model="editTag.systemType" />
+              <span>Linux</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="mac" v-model="editTag.systemType" />
+              <span>Mac</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button class="cancel-button" @click="$emit('toggle-edit-interface', 'tag')">取消</button>
+          <button class="save-button" @click="saveEditTag">保存</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 编辑集合界面 -->
+    <div v-else-if="activeEditInterface === 'collection'" class="add-interface">
+      <div class="interface-header">
+        <h2>编辑集合</h2>
+        <button class="close-button" @click="$emit('toggle-edit-interface', 'collection')">×</button>
+      </div>
+      
+      <div class="form-container">
+        <div class="form-group">
+          <label for="edit-collection-name">集合名称</label>
+          <input type="text" id="edit-collection-name" v-model="editCollection.name" placeholder="请输入集合名称" />
+        </div>
+        
+        <div class="form-group">
+          <label for="edit-collection-description">集合描述</label>
+          <textarea id="edit-collection-description" v-model="editCollection.description" placeholder="请输入集合描述" rows="2"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>关联指令</label>
+          <el-select
+            v-model="editCollection.commandIds"
+            multiple
+            filterable
+            placeholder="请选择关联指令"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cmd in commands"
+              :key="cmd.id"
+              :label="`[${cmd.id}] ${cmd.name}`"
+              :value="cmd.id"
+            />
+          </el-select>
+        </div>
+        
+        <div class="form-group">
+          <label>适用系统</label>
+          <div class="system-selector">
+            <label class="system-option">
+              <input type="checkbox" value="windows" v-model="editCollection.systemType" />
+              <span>Windows</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="linux" v-model="editCollection.systemType" />
+              <span>Linux</span>
+            </label>
+            <label class="system-option">
+              <input type="checkbox" value="mac" v-model="editCollection.systemType" />
+              <span>Mac</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button class="cancel-button" @click="$emit('toggle-edit-interface', 'collection')">取消</button>
+          <button class="save-button" @click="saveEditCollection">保存</button>
+        </div>
+      </div>
+    </div>
+    
     <!-- 查询界面 -->
     <div v-else class="query-interface">
       <div class="interface-header">
@@ -343,6 +549,14 @@ const props = defineProps({
     type: String,
     required: true
   },
+  activeEditInterface: {
+    type: String,
+    required: true
+  },
+  selectedItem: {
+    type: Object,
+    required: true
+  },
   menuType: {
     type: String,
     required: true
@@ -370,26 +584,30 @@ const props = defineProps({
 });
 
 // 监听menuType和activeMenu的变化，输出日志
-watch(
-  [() => props.menuType, () => props.activeMenu],
-  ([newMenuType, newActiveMenu]) => {
-    console.log('MainContent.vue: menuType变化为:', newMenuType, 'activeMenu变化为:', newActiveMenu);
-    console.log('MainContent.vue: 命令列表条件:', newMenuType === 'all' || (newMenuType === 'tags' && newActiveMenu !== '0') || (newMenuType === 'collections' && newActiveMenu !== '0'));
-    console.log('MainContent.vue: 标签列表条件:', newMenuType === 'tags' && newActiveMenu === '0');
-    console.log('MainContent.vue: 集合列表条件:', newMenuType === 'collections' && newActiveMenu === '0');
-  },
-  { immediate: true }
-);
+// watch(
+//   [() => props.menuType, () => props.activeMenu],
+//   ([newMenuType, newActiveMenu]) => {
+//     console.log('MainContent.vue: menuType变化为:', newMenuType, 'activeMenu变化为:', newActiveMenu);
+//     console.log('MainContent.vue: 命令列表条件:', newMenuType === 'all' || (newMenuType === 'tags' && newActiveMenu !== '0') || (newMenuType === 'collections' && newActiveMenu !== '0'));
+//     console.log('MainContent.vue: 标签列表条件:', newMenuType === 'tags' && newActiveMenu === '0');
+//     console.log('MainContent.vue: 集合列表条件:', newMenuType === 'collections' && newActiveMenu === '0');
+//   },
+//   { immediate: true }
+// );
 
 const emit = defineEmits([
   'toggle-add-interface',
+  'toggle-edit-interface',
   'update:searchKeyword',
   'add-command',
   'add-collection',
   'add-tag',
   'edit-item',
   'delete-item',
-  'copy-to-clipboard'
+  'copy-to-clipboard',
+  'update-command',
+  'update-tag',
+  'update-collection'
 ]);
 
 // 表单数据
@@ -404,6 +622,54 @@ const newCommand = ref({
   copyCount: 0,
   systemType: ['windows']
 });
+
+// 编辑数据
+const editCommand = ref({
+  id: '',
+  name: '',
+  content: '',
+  description: '',
+  tags: [],
+  collections: [],
+  sortValue: 0,
+  copyCount: 0,
+  systemType: ['windows']
+});
+
+const editTag = ref({
+  id: '',
+  name: '',
+  description: '',
+  sortValue: 0,
+  systemType: [],
+  commandIds: []
+});
+
+const editCollection = ref({
+  id: '',
+  name: '',
+  description: '',
+  sortValue: 0,
+  systemType: [],
+  commandIds: []
+});
+
+// 监听selectedItem变化，更新编辑数据
+watch(
+  () => props.selectedItem,
+  (newItem) => {
+    if (newItem) {
+      if (props.activeEditInterface === 'command') {
+        editCommand.value = { ...newItem };
+      } else if (props.activeEditInterface === 'tag') {
+        editTag.value = { ...newItem };
+      } else if (props.activeEditInterface === 'collection') {
+        editCollection.value = { ...newItem };
+      }
+    }
+  },
+  { immediate: true, deep: true }
+);
 
 const newCollection = ref({
   id: '',
@@ -464,8 +730,8 @@ const filteredCommands = computed(() => {
     command.name.toLowerCase().includes(props.searchKeyword.toLowerCase()) ||
     command.content.toLowerCase().includes(props.searchKeyword.toLowerCase()) ||
     command.description.toLowerCase().includes(props.searchKeyword.toLowerCase()) ||
-    command.tags.some(tagId => getTagName(tagId).toLowerCase().includes(props.searchKeyword.toLowerCase())) ||
-    command.collections.some(collId => getCollectionName(collId).toLowerCase().includes(props.searchKeyword.toLowerCase()))
+    (Array.isArray(command.tags) && command.tags.some(tagId => getTagName(tagId).toLowerCase().includes(props.searchKeyword.toLowerCase()))) ||
+    (Array.isArray(command.collections) && command.collections.some(collId => getCollectionName(collId).toLowerCase().includes(props.searchKeyword.toLowerCase())))
   );
 });
 
@@ -485,8 +751,8 @@ function getCollectionName(collId) {
 function getItemCommandCount(itemId) {
   return props.commands.filter(command => 
     props.menuType === 'tags' 
-      ? command.tags.includes(itemId) 
-      : command.collections.includes(itemId)
+      ? Array.isArray(command.tags) && command.tags.includes(itemId) 
+      : Array.isArray(command.collections) && command.collections.includes(itemId)
   ).length;
 }
 
@@ -624,6 +890,120 @@ function resetTagForm() {
     systemType: [],
     commandIds: []
   };
+}
+
+// 保存编辑的命令
+async function saveEditCommand() {
+  if (!editCommand.value.name || !editCommand.value.content) {
+    alert('请填写指令名称和内容');
+    return;
+  }
+  
+  try {
+    // 构造符合后端Command结构体的数据
+    const commandData = {
+      id: editCommand.value.id,
+      name: editCommand.value.name,
+      content: editCommand.value.content,
+      description: editCommand.value.description,
+      os: editCommand.value.systemType,
+      tagIDs: editCommand.value.tags.map(tag => typeof tag === 'object' ? tag.id : tag), // 提取标签ID
+      collectionIDs: editCommand.value.collections.map(collection => typeof collection === 'object' ? collection.id : collection) // 提取集合ID
+    };
+    
+    console.log('保存编辑的命令数据:', commandData);
+    
+    // 调用后端API更新命令
+    emit('update-command', commandData);
+    
+    // 显示成功消息
+    alert('命令更新成功！');
+    
+    // 关闭编辑界面
+    emit('toggle-edit-interface', 'command');
+    
+    // 通知父组件刷新数据
+    emit('refresh-data');
+    
+  } catch (error) {
+    console.error('更新命令失败:', error);
+    alert(`更新命令失败: ${error.message || error}`);
+  }
+}
+
+// 保存编辑的标签
+async function saveEditTag() {
+  if (!editTag.value.name) {
+    alert('请填写标签名称');
+    return;
+  }
+  
+  try {
+    // 构造符合后端Tag结构体的数据
+    const tagData = {
+      id: editTag.value.id,
+      name: editTag.value.name,
+      description: editTag.value.description,
+      searchCount: editTag.value.searchCount || 0,
+      os: editTag.value.systemType,
+      commandIds: editTag.value.commandIds
+    };
+    
+    console.log('保存编辑的标签数据:', tagData);
+    
+    // 调用后端API更新标签
+    emit('update-tag', tagData);
+    
+    // 显示成功消息
+    alert('标签更新成功！');
+    
+    // 关闭编辑界面
+    emit('toggle-edit-interface', 'tag');
+    
+    // 通知父组件刷新数据
+    emit('refresh-data');
+    
+  } catch (error) {
+    console.error('更新标签失败:', error);
+    alert(`更新标签失败: ${error.message || error}`);
+  }
+}
+
+// 保存编辑的集合
+async function saveEditCollection() {
+  if (!editCollection.value.name) {
+    alert('请填写集合名称');
+    return;
+  }
+  
+  try {
+    // 构造符合后端Collection结构体的数据
+    const collectionData = {
+      id: editCollection.value.id,
+      name: editCollection.value.name,
+      description: editCollection.value.description,
+      os: editCollection.value.systemType,
+      commandIds: editCollection.value.commandIds
+    };
+    
+    console.log('保存编辑的集合数据:', collectionData);
+    
+    // 调用后端API更新集合
+    emit('update-collection', collectionData);
+    
+    // 显示成功消息
+    alert('集合更新成功！');
+    
+    // 关闭编辑界面
+    emit('toggle-edit-interface', 'collection');
+    
+    // 通知父组件刷新数据
+    emit('refresh-data');
+    
+  } catch (error) {
+    console.error('更新集合失败:', error);
+    alert(`更新集合失败: ${error.message || error}`);
+  }
 }
 
 // 刷新所有指令数据

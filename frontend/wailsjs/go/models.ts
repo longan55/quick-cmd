@@ -7,12 +7,9 @@ export namespace main {
 	    searchCount?: number;
 	    os?: string[];
 	    commandIds?: number[];
-	    // Go type: time
-	    createdAt?: any;
-	    // Go type: time
-	    updatedAt?: any;
-	    // Go type: time
-	    deletedAt?: any;
+	    createdAt?: string;
+	    updatedAt?: string;
+	    deletedAt?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Collection(source);
@@ -26,28 +23,10 @@ export namespace main {
 	        this.searchCount = source["searchCount"];
 	        this.os = source["os"];
 	        this.commandIds = source["commandIds"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
-	        this.deletedAt = this.convertValues(source["deletedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.deletedAt = source["deletedAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class Command {
 	    id: number;
@@ -59,12 +38,9 @@ export namespace main {
 	    os?: string[];
 	    tagIDs?: number[];
 	    collectionIDs?: number[];
-	    // Go type: time
-	    createdAt?: any;
-	    // Go type: time
-	    updatedAt?: any;
-	    // Go type: time
-	    deletedAt?: any;
+	    createdAt?: string;
+	    updatedAt?: string;
+	    deletedAt?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Command(source);
@@ -81,28 +57,10 @@ export namespace main {
 	        this.os = source["os"];
 	        this.tagIDs = source["tagIDs"];
 	        this.collectionIDs = source["collectionIDs"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
-	        this.deletedAt = this.convertValues(source["deletedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.deletedAt = source["deletedAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class SortOption {
 	    name?: string;
@@ -234,12 +192,9 @@ export namespace main {
 	    searchCount?: number;
 	    os?: string[];
 	    commandIds?: number[];
-	    // Go type: time
-	    createdAt?: any;
-	    // Go type: time
-	    updatedAt?: any;
-	    // Go type: time
-	    deletedAt?: any;
+	    createdAt?: string;
+	    updatedAt?: string;
+	    deletedAt?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Tag(source);
@@ -253,28 +208,10 @@ export namespace main {
 	        this.searchCount = source["searchCount"];
 	        this.os = source["os"];
 	        this.commandIds = source["commandIds"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
-	        this.deletedAt = this.convertValues(source["deletedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.deletedAt = source["deletedAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 
 }

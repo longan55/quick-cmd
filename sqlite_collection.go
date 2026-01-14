@@ -9,7 +9,7 @@ import (
 
 // CreateCollectionSQLite 创建集合
 func CreateCollectionSQLite(collection *Collection) error {
-	now := time.Now()
+	now := time.Now().Format("2006-01-02 15:04:05")
 	collection.CreatedAt = now
 	collection.UpdatedAt = now
 	collection.SearchCount = 0
@@ -111,7 +111,7 @@ func GetCollectionSQLite(id uint64) (*Collection, error) {
 
 	// 处理deletedAt字段
 	if deletedAt.Valid {
-		collection.DeletedAt = &deletedAt.Time
+		collection.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 	}
 
 	return &collection, nil
@@ -166,7 +166,7 @@ func GetCollectionsSQLite(option Option) ([]*Collection, error) {
 
 		// 处理deletedAt字段
 		if deletedAt.Valid {
-			collection.DeletedAt = &deletedAt.Time
+			collection.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 		}
 
 		collections = append(collections, &collection)
@@ -181,7 +181,7 @@ func GetCollectionsSQLite(option Option) ([]*Collection, error) {
 
 // UpdateCollectionSQLite 更新集合
 func UpdateCollectionSQLite(collection *Collection) error {
-	collection.UpdatedAt = time.Now()
+	collection.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
 	// 更新SQLite数据库中的集合
 	_, err := DB.Exec(

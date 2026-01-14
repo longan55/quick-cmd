@@ -10,7 +10,7 @@ import (
 // CreateTagSQLite 创建标签
 func CreateTagSQLite(tag *Tag) error {
 	log.Printf("CreateTagSQLite: %+v", tag)
-	now := time.Now()
+	now := time.Now().Format("2006-01-02 15:04:05")
 	tag.CreatedAt = now
 	tag.UpdatedAt = now
 	tag.SearchCount = 0
@@ -115,7 +115,7 @@ func GetTagSQLite(id uint64) (*Tag, error) {
 
 	// 处理deletedAt字段
 	if deletedAt.Valid {
-		tag.DeletedAt = &deletedAt.Time
+		tag.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 	}
 
 	return &tag, nil
@@ -201,7 +201,7 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 
 		// 处理deletedAt字段
 		if deletedAt.Valid {
-			tag.DeletedAt = &deletedAt.Time
+			tag.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 		}
 
 		tags = append(tags, &tag)
@@ -217,7 +217,7 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 
 // UpdateTagSQLite 更新标签
 func UpdateTagSQLite(tag *Tag) error {
-	tag.UpdatedAt = time.Now()
+	tag.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
 	// 更新SQLite数据库中的标签
 	_, err := DB.Exec(

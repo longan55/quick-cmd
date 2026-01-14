@@ -10,7 +10,7 @@ import (
 // CreateCommandSQLite 创建命令
 func CreateCommandSQLite(cmd *Command) error {
 	log.Printf("CreateCommandSQLite请求参数: %+v\n", cmd)
-	now := time.Now()
+	now := time.Now().Format("2006-01-02 15:04:05")
 	cmd.CreatedAt = now
 	cmd.UpdatedAt = now
 	cmd.CopyCounts = 0
@@ -131,7 +131,7 @@ func GetCommandSQLite(id uint64) (*Command, error) {
 
 	// 处理deletedAt字段
 	if deletedAt.Valid {
-		cmd.DeletedAt = &deletedAt.Time
+		cmd.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 	}
 
 	// // 获取命令关联的标签ID
@@ -190,7 +190,7 @@ func GetCommandsByTagIDs(ids []uint64) ([]*Command, error) {
 
 		// 处理deletedAt字段
 		if deletedAt.Valid {
-			cmd.DeletedAt = &deletedAt.Time
+			cmd.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 		}
 
 		commands = append(commands, &cmd)
@@ -236,8 +236,8 @@ func GetCommandByCollectionIds(ids []uint64) ([]*Command, error) {
 
 		// 处理deletedAt字段
 		if deletedAt.Valid {
-			cmd.DeletedAt = &deletedAt.Time
-		}
+		cmd.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
+	}
 
 		commands = append(commands, &cmd)
 	}
@@ -287,8 +287,8 @@ func GetCommandsSQLite(option Option) ([]*Command, error) {
 		}
 
 		if deletedAt.Valid {
-			cmd.DeletedAt = &deletedAt.Time
-		}
+		cmd.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
+	}
 
 		commands = append(commands, &cmd)
 	}
@@ -314,7 +314,7 @@ func UpdateCommandSQLite(cmd *Command) error {
 		return fmt.Errorf("命令ID不能为空")
 	}
 
-	cmd.UpdatedAt = time.Now()
+	cmd.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
 	// 使用参数化查询，防止SQL注入
 	_, err := DB.Exec(

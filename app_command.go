@@ -3,23 +3,22 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 )
 
 // Command 指令结构体
 type Command struct {
-	ID            uint64     `json:"id"`
-	Name          string     `json:"name"`
-	Content       string     `json:"content,omitempty"`
-	Description   string     `json:"description,omitempty"`
-	CopyCounts    int        `json:"copyCount,omitempty"`
-	SearchCount   int        `json:"searchCount,omitempty"`
-	Os            []string   `json:"os,omitempty"`
-	TagIDs        []uint64   `json:"tagIDs,omitempty"`        // 标签ID列表
-	CollectionIDs []uint64   `json:"collectionIDs,omitempty"` // 集合ID列表
-	CreatedAt     time.Time  `json:"createdAt,omitempty"`
-	UpdatedAt     time.Time  `json:"updatedAt,omitempty"`
-	DeletedAt     *time.Time `json:"deletedAt,omitempty"`
+	ID            uint64   `json:"id"`
+	Name          string   `json:"name"`
+	Content       string   `json:"content,omitempty"`
+	Description   string   `json:"description,omitempty"`
+	CopyCounts    int      `json:"copyCount,omitempty"`
+	SearchCount   int      `json:"searchCount,omitempty"`
+	Os            []string `json:"os,omitempty"`
+	TagIDs        []uint64 `json:"tagIDs,omitempty"`        // 标签ID列表
+	CollectionIDs []uint64 `json:"collectionIDs,omitempty"` // 集合ID列表
+	CreatedAt     string   `json:"createdAt,omitempty"`
+	UpdatedAt     string   `json:"updatedAt,omitempty"`
+	DeletedAt     string   `json:"deletedAt,omitempty"`
 }
 
 // CreateCommand 创建指令

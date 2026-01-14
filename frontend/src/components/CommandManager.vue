@@ -34,6 +34,8 @@
       <!-- 右侧主内容区 -->
       <MainContent
         :activeAddInterface="activeAddInterface"
+        :activeEditInterface="activeEditInterface"
+        :selectedItem="selectedItem"
         :menuType="menuType"
         :activeMenu="activeMenu"
         :tags="tags"
@@ -41,10 +43,14 @@
         :commands="commands"
         :searchKeyword="searchKeyword"
         @toggle-add-interface="toggleAddInterface"
+        @toggle-edit-interface="toggleEditInterface"
         @update:searchKeyword="searchKeyword = $event"
         @add-command="addCommand"
         @add-collection="addCollection"
         @add-tag="addTag"
+        @update-command="updateCommand"
+        @update-tag="updateTag"
+        @update-collection="updateCollection"
         @edit-item="editItem"
         @delete-item="deleteItem"
         @copy-to-clipboard="copyToClipboard"
@@ -78,6 +84,8 @@ import Dialogs from './Dialogs.vue';
 // 响应式数据
 // 激活的添加界面类型（'command' | 'collection' | 'tag' | ''）
 const activeAddInterface = ref('');
+// 激活的编辑界面类型（'command' | 'collection' | 'tag' | ''）
+const activeEditInterface = ref('');
 // 选中的项目
 const selectedItem = ref(null);
 // 当前激活的菜单ID
@@ -484,11 +492,67 @@ async function addTag(tag) {
   }
 }
 
+// 更新命令
+async function updateCommand(command) {
+  try {
+    // 调用后端接口更新命令
+    // 这里需要根据后端API的实际情况来调用，暂时使用console.log
+    console.log('更新命令:', command);
+    // await UpdateCommand(command);
+  } catch (error) {
+    console.error('更新命令失败:', error);
+    alert('更新命令失败: ' + error.message);
+  }
+}
+
+// 更新标签
+async function updateTag(tag) {
+  try {
+    // 调用后端接口更新标签
+    // 这里需要根据后端API的实际情况来调用，暂时使用console.log
+    console.log('更新标签:', tag);
+    // await UpdateTag(tag);
+  } catch (error) {
+    console.error('更新标签失败:', error);
+    alert('更新标签失败: ' + error.message);
+  }
+}
+
+// 更新集合
+async function updateCollection(collection) {
+  try {
+    // 调用后端接口更新集合
+    // 这里需要根据后端API的实际情况来调用，暂时使用console.log
+    console.log('更新集合:', collection);
+    // await UpdateCollection(collection);
+  } catch (error) {
+    console.error('更新集合失败:', error);
+    alert('更新集合失败: ' + error.message);
+  }
+}
+
+// 切换编辑界面
+function toggleEditInterface(type) {
+  // 如果当前界面是目标类型，则关闭；否则打开目标类型界面
+  activeEditInterface.value = activeEditInterface.value === type ? '' : type;
+  // 如果关闭编辑界面，清空选中的项目
+  if (activeEditInterface.value === '') {
+    selectedItem.value = null;
+  }
+}
+
 // 编辑项目
 function editItem(item) {
   // 设置选中的项目
   selectedItem.value = item;
-  // 这里可以添加编辑逻辑
+  // 判断项目类型并打开对应编辑界面
+  if (item.tags) { // 是命令
+    toggleEditInterface('command');
+  } else if (menuType.value === 'tags') { // 是标签
+    toggleEditInterface('tag');
+  } else if (menuType.value === 'collections') { // 是集合
+    toggleEditInterface('collection');
+  }
 }
 
 // 删除项目

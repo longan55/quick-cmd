@@ -8,15 +8,15 @@ import (
 
 // Collection 集合结构体
 type Collection struct {
-	ID          uint64     `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description,omitempty"`
-	SearchCount int        `json:"searchCount,omitempty"`
-	Os          []string   `json:"os,omitempty"`
-	CommandIDs  []uint64   `json:"commandIds,omitempty"`
-	CreatedAt   time.Time  `json:"createdAt,omitempty"`
-	UpdatedAt   time.Time  `json:"updatedAt,omitempty"`
-	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
+	ID          uint64   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	SearchCount int      `json:"searchCount,omitempty"`
+	Os          []string `json:"os,omitempty"`
+	CommandIDs  []uint64 `json:"commandIds,omitempty"`
+	CreatedAt   string   `json:"createdAt,omitempty"`
+	UpdatedAt   string   `json:"updatedAt,omitempty"`
+	DeletedAt   string   `json:"deletedAt,omitempty"`
 }
 
 // CreateCollection 创建集合

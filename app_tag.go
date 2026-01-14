@@ -8,15 +8,15 @@ import (
 
 // Tag 标签结构体
 type Tag struct {
-	ID          uint64     `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description,omitempty"`
-	SearchCount int        `json:"searchCount,omitempty"`
-	Os          []string   `json:"os,omitempty"`
-	CommandIDs  []uint64   `json:"commandIds,omitempty"`
-	CreatedAt   time.Time  `json:"createdAt,omitempty"`
-	UpdatedAt   time.Time  `json:"updatedAt,omitempty"`
-	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
+	ID          uint64   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	SearchCount int      `json:"searchCount,omitempty"`
+	Os          []string `json:"os,omitempty"`
+	CommandIDs  []uint64 `json:"commandIds,omitempty"`
+	CreatedAt   string   `json:"createdAt,omitempty"`
+	UpdatedAt   string   `json:"updatedAt,omitempty"`
+	DeletedAt   string   `json:"deletedAt,omitempty"`
 }
 
 // CreateTag 创建标签
@@ -53,15 +53,15 @@ func (a *App) UpdateTag(tag *Tag) error {
 	log.Printf("UpdateTag: %+v\n", tag)
 	// 检查标签是否存在
 	for _, t := range a.tags {
-		if t.ID == tag.ID && t.DeletedAt == nil {
+		if t.ID == tag.ID && t.DeletedAt == "" {
 			t.Name = tag.Name
 			t.Description = tag.Description
-			t.UpdatedAt = time.Now()
+			t.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 			return nil
 		}
 	}
 	// 更新时间
-	tag.UpdatedAt = time.Now()
+	tag.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
 	// 保存到模拟数据库
 	a.tags = append(a.tags, tag)
