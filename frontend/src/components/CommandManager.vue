@@ -5,13 +5,9 @@
       @toggle-settings-modal="toggleSettingsModal"
       @toggle-about-modal="toggleAboutModal"
     />
-    <!-- 
-      :menuType="menuType"
-      @update:menuType="menuType = $event" -->
     <div class="content-container">
       <!-- 左侧边栏 -->
       <Sidebar 
-        :menuItems="menuItems" 
         :activeMenu="activeMenu"
         :menuType="menuType"
         :systemType="systemType"
@@ -120,41 +116,9 @@ const isSettingsModalOpen = ref(false);
 const isAboutModalOpen = ref(false);
 // 设置数据
 const settings = ref({
-  // apiEndpoint: '',   // API端点
-  // apiKey: '',        // API密钥
   theme: 'light',    // 主题
   language: 'zh-CN'  // 语言
 });
-
-// 表单数据
-// 新命令表单
-// const newCommand = ref({
-//   id: '',           // 命令ID
-//   name: '',         // 命令名称
-//   content: '',      // 命令内容
-//   description: '',  // 命令描述
-//   tags: [],         // 关联的标签ID数组
-//   collections: [],  // 关联的集合ID数组
-//   sortValue: 0,     // 排序值
-//   copyCount: 0,     // 复制次数
-//   systemType: ['windows'] // 适用系统类型
-// });
-
-// 新集合表单
-// const newCollection = ref({
-//   id: '',           // 集合ID
-//   name: '',         // 集合名称
-//   description: '',  // 集合描述
-//   sortValue: 0      // 排序值
-// });
-
-// 新标签表单
-// const newTag = ref({
-//   id: '',           // 标签ID
-//   name: '',         // 标签名称
-//   description: '',  // 标签描述
-//   sortValue: 0      // 排序值
-// });
 
 // 标签菜单数据 - 稳定的数据，不会在切换内容时改变
 const tags = ref([
@@ -169,25 +133,6 @@ const collections = ref([
 // 当前显示的命令列表
 const commands = ref([]);
 
-// 菜单项数据
-const menuItems = ref({
-  tags: [     // 标签菜单
-    { id: 0, name: '全部标签', icon: '🏷️' },
-  ],
-  collections: [  // 集合菜单
-    { id: 0, name: '全部集合', icon: '📁' },
-  ],
-  all: [     // 全部命令菜单
-    { id: 0, name: '全部命令', icon: '⚡' },
-  ]
-});
-
-// 计算属性：根据系统类型过滤命令
-// const filteredCommands = computed(() => {
-//   return commands.value.filter(command => {
-//     return command.systemType.some(type => systemType.value.includes(type));
-//   });
-// });
 
 // 构建排序参数的辅助函数
 function buildSortParams() {
@@ -234,21 +179,24 @@ function toggleActiveMenu(menuId) {
 }
 
 function getOptionAndHandle(option){
+  
+  // 打印调用栈信息，查看被哪个函数调用
+  // const error = new Error();
+  // const stack = error.stack;
+  // const stackLines = stack.split('\n');
+  // // stackLines[0] 是 Error
+  // // stackLines[1] 是 getOptionAndHandle 函数本身
+  // // stackLines[2] 是调用 getOptionAndHandle 的函数
+  // if (stackLines.length > 2) {
+  //   const callerLine = stackLines[2];
+  //   console.log("getOptionAndHandle 被调用了，调用者信息:", callerLine.trim());
+  // }
+  
   //menuItems.topMenu
     // 调用GetOptions获取数据
     GetOptions(option).then((result) => {
     console.log("获取数据成功:", result);
-    
-    // 更新数据 - 使用统一的数据更新逻辑
-    // 根据当前菜单类型，先初始化对应的数据数组
-    // if (menuType.value === 'tags') {
-    //   // 如果是标签菜单，先将标签数组初始化为空
-    //   tags.value = [];
-    // } else if (menuType.value === 'collections') {
-    //   // 如果是集合菜单，先将集合数组初始化为空
-    //   collections.value = [];
-    // }
-    
+  
     if (result.data) {
       // 如果有 data 字段，从 data 中获取
       // 更新命令数据
@@ -601,15 +549,6 @@ function showCopySuccess() {
   console.log('复制成功！');
 }
 
-// 生成UUID
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
 // 点击空白处关闭排序下拉框
 function handleClickOutside(event) {
   // 如果点击的元素不是排序容器的子元素，则关闭下拉框
@@ -622,20 +561,6 @@ function handleClickOutside(event) {
 onMounted(() => {
   // 绑定点击事件
   document.addEventListener('click', handleClickOutside);
-  
-  // 获取菜单项
-  // GetMenuItems().then((result) => {
-  //   console.log("获取菜单项成功:", result);
-  //   // 这里可以根据后端返回的数据更新menuItems
-  //   if (result && result.tags) {
-  //     menuItems.value.tags = result.tags;
-  //   }
-  //   if (result && result.collections) {
-  //     menuItems.value.collections = result.collections;
-  //   }
-  // }).catch((error) => {
-  //   console.error("获取菜单项失败:", error);
-  // });
   
   // 构建初始Option参数 - 专门用于获取完整标签和集合数据
   const initialOption = {
@@ -665,42 +590,42 @@ onMounted(() => {
     console.error("获取初始标签数据失败:", error);
   });
   
-  // 再获取集合数据
-  const collectionOption = {
-    Name: '',
-    Os: systemType.value,
-    Type: 'collections',
-    ID: 0,
-    Sort: {}
-  };
+  // // 再获取集合数据
+  // const collectionOption = {
+  //   Name: '',
+  //   Os: systemType.value,
+  //   Type: 'collections',
+  //   ID: 0,
+  //   Sort: {}
+  // };
   
-  GetOptions(collectionOption).then((result) => {
-    console.log("获取初始集合数据成功:", result);
-    // 确保获取完整的集合数据
-    if (result.data && result.data.collections) {
-      const defaultCollection = collections.value[0];
-      const newCollections = result.data.collections.filter(col => col.id !== 0);
-      collections.value = [defaultCollection, ...newCollections];
-    } else if (result.collections) {
-      const defaultCollection = collections.value[0];
-      const newCollections = result.collections.filter(col => col.id !== 0);
-      collections.value = [defaultCollection, ...newCollections];
-    }
-  }).catch((error) => {
-    console.error("获取初始集合数据失败:", error);
-  });
+  // GetOptions(collectionOption).then((result) => {
+  //   console.log("获取初始集合数据成功:", result);
+  //   // 确保获取完整的集合数据
+  //   if (result.data && result.data.collections) {
+  //     const defaultCollection = collections.value[0];
+  //     const newCollections = result.data.collections.filter(col => col.id !== 0);
+  //     collections.value = [defaultCollection, ...newCollections];
+  //   } else if (result.collections) {
+  //     const defaultCollection = collections.value[0];
+  //     const newCollections = result.collections.filter(col => col.id !== 0);
+  //     collections.value = [defaultCollection, ...newCollections];
+  //   }
+  // }).catch((error) => {
+  //   console.error("获取初始集合数据失败:", error);
+  // });
   
-  // 最后获取当前菜单的命令数据
-  const commandOption = {
-    Name: searchKeyword.value,
-    Os: systemType.value,
-    Type: menuType.value,
-    ID: parseInt(activeMenu.value),
-    Sort: buildSortParams()
-  };
+  // // 最后获取当前菜单的命令数据
+  // const commandOption = {
+  //   Name: searchKeyword.value,
+  //   Os: systemType.value,
+  //   Type: menuType.value,
+  //   ID: parseInt(activeMenu.value),
+  //   Sort: buildSortParams()
+  // };
   
-  // 调用GetOptions获取初始数据
-  getOptionAndHandle(commandOption);
+  // // 调用GetOptions获取初始数据
+  // getOptionAndHandle(commandOption);
 });
 
 // 组件卸载时
@@ -710,22 +635,22 @@ onUnmounted(() => {
 });
 
 // 监听菜单类型变化
-watch(menuType, () => {
-  // 切换菜单类型时，默认选择第一个选项(ID=0)
-  activeMenu.value = '0'; // 所有菜单类型的第一个选项ID都为0
-  console.log("切换菜单类型为:", menuType.value);
-  // 构建Option参数
-  const option = {
-    Name: searchKeyword.value,
-    Os: systemType.value,
-    Type: menuType.value,
-    ID: parseInt(activeMenu.value),
-    Sort: buildSortParams()
-  };
+// watch(menuType, () => {
+//   // 切换菜单类型时，默认选择第一个选项(ID=0)
+//   activeMenu.value = '0'; // 所有菜单类型的第一个选项ID都为0
+//   console.log("切换菜单类型为:", menuType.value);
+//   // 构建Option参数
+//   const option = {
+//     Name: searchKeyword.value,
+//     Os: systemType.value,
+//     Type: menuType.value,
+//     ID: parseInt(activeMenu.value),
+//     Sort: buildSortParams()
+//   };
   
-  // 调用GetOptions获取数据
-  getOptionAndHandle(option);
-});
+//   // 调用GetOptions获取数据
+//   getOptionAndHandle(option);
+// });
 
 // 监听搜索关键词变化
 watch(() => searchKeyword.value, () => {

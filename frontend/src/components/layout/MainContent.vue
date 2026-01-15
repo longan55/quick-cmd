@@ -448,16 +448,6 @@
               <td>{{ command.name }}</td>
               <td class="command-content-cell">{{ command.content }}</td>
               <td>{{ command.description }}</td>
-              <!-- <td>
-                <span v-for="tagId in command.tags" :key="tagId" class="tag-badge">
-                  {{ getTagName(tagId) }}
-                </span>
-              </td>
-              <td>
-                <span v-for="collId in command.collections" :key="collId" class="collection-badge">
-                  {{ getCollectionName(collId) }}
-                </span>
-              </td> -->
               <td>{{ command.copyCount }}</td>
               <td class="action-buttons">
                 <button class="copy-button" @click="$emit('copy-to-clipboard', command.content)">
@@ -541,7 +531,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { CreateCommand, GetAllCommandsIDAndName, GetAllTagsIDAndName, GetAllCollectionsIDAndName } from '../../../wailsjs/go/main/App';
 
 const props = defineProps({
@@ -582,18 +572,6 @@ const props = defineProps({
     required: true
   }
 });
-
-// 监听menuType和activeMenu的变化，输出日志
-// watch(
-//   [() => props.menuType, () => props.activeMenu],
-//   ([newMenuType, newActiveMenu]) => {
-//     console.log('MainContent.vue: menuType变化为:', newMenuType, 'activeMenu变化为:', newActiveMenu);
-//     console.log('MainContent.vue: 命令列表条件:', newMenuType === 'all' || (newMenuType === 'tags' && newActiveMenu !== '0') || (newMenuType === 'collections' && newActiveMenu !== '0'));
-//     console.log('MainContent.vue: 标签列表条件:', newMenuType === 'tags' && newActiveMenu === '0');
-//     console.log('MainContent.vue: 集合列表条件:', newMenuType === 'collections' && newActiveMenu === '0');
-//   },
-//   { immediate: true }
-// );
 
 const emit = defineEmits([
   'toggle-add-interface',
@@ -693,21 +671,6 @@ const allCommands = ref([]);
 const allTags = ref([]);
 const allCollections = ref([]);
 
-// onMounted(async () => {
-//   try {
-//     const [commands, tags, collections] = await Promise.all([
-//       GetAllCommandsIDAndName(),
-//       GetAllTagsIDAndName(),
-//       GetAllCollectionsIDAndName()
-//     ]);
-//     allCommands.value = commands;
-//     allTags.value = tags;
-//     allCollections.value = collections;
-//   } catch (error) {
-//     console.error('获取数据失败:', error);
-//   }
-// });
-
 // 监听activeAddInterface的变化，当切换到不同界面时刷新对应数据
 watch(
   () => props.activeAddInterface,
@@ -754,15 +717,6 @@ function getItemCommandCount(itemId) {
       ? Array.isArray(command.tags) && command.tags.includes(itemId) 
       : Array.isArray(command.collections) && command.collections.includes(itemId)
   ).length;
-}
-
-// 生成UUID
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
 }
 
 // 保存命令

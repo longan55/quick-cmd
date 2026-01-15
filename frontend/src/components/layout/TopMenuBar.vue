@@ -9,7 +9,7 @@
 
 <script setup>
 // 导入Vue 3的组件API
-import { defineProps, defineEmits, ref } from 'vue';
+import { ref } from 'vue';
 
 // 定义组件属性
 const props = defineProps({

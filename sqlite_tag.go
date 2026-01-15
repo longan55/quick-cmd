@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 )
 
@@ -92,14 +93,13 @@ func GetTagSQLite(id uint64) (*Tag, error) {
 
 	var tag Tag
 	var deletedAt sql.NullTime
-	var osString string
 
 	// 使用参数化查询，防止SQL注入
 	err := DB.QueryRow(
-		"SELECT id, name, description, search_count, os, created_at, updated_at, deleted_at FROM tags WHERE id = ? AND deleted_at IS NULL",
+		"SELECT id, name, description, search_count, created_at, updated_at, deleted_at FROM tags WHERE id = ? AND deleted_at IS NULL",
 		id,
 	).Scan(
-		&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &osString, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
+		&tag.ID, &tag.Name, &tag.Description, &tag.SearchCount, &tag.CreatedAt, &tag.UpdatedAt, &deletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -193,12 +193,6 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 			return nil, fmt.Errorf("扫描标签失败: %v", err)
 		}
 
-		// 从关联表获取OS信息
-		// if tag.Os, err = GetTagOSsSQLite(tag.ID); err != nil {
-		// 	log.Printf("获取标签OS失败: %v", err)
-		// 	return nil, fmt.Errorf("获取标签OS失败: %v", err)
-		// }
-
 		// 处理deletedAt字段
 		if deletedAt.Valid {
 			tag.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
@@ -217,56 +211,148 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 
 // UpdateTagSQLite 更新标签
 func UpdateTagSQLite(tag *Tag) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return fmt.Errorf("开启事务失败: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("回滚事务失败: %v", rollbackErr)
+			}
+		}
+	}()
+
 	tag.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
-	// 更新SQLite数据库中的标签
-	_, err := DB.Exec(
-		"UPDATE tags SET name = ?, description = ?, search_count = ?, os = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
-		tag.Name, tag.Description, tag.SearchCount, "", tag.UpdatedAt, tag.ID,
+	//0. 查询标签的OS关联关系
+	rows, err := tx.Query("SELECT os FROM tag_os WHERE tag_id = ?", tag.ID)
+	if err != nil {
+		return fmt.Errorf("查询标签OS关联关系失败: %v", err)
+	}
+	defer rows.Close()
+	var osList []string
+	for rows.Next() {
+		var os string
+		if err = rows.Scan(&os); err != nil {
+			return fmt.Errorf("扫描标签OS关联关系失败: %v", err)
+		}
+		osList = append(osList, os)
+	}
+	if err = rows.Err(); err != nil {
+		return fmt.Errorf("遍历标签OS关联关系结果集失败: %v", err)
+	}
+	// 查询标签的指令关联关系
+	rows, err = tx.Query("SELECT command_id FROM command_tags WHERE tag_id = ?", tag.ID)
+	if err != nil {
+		return fmt.Errorf("查询标签指令关联关系失败: %v", err)
+	}
+	defer rows.Close()
+	var commandIDList []uint64
+	for rows.Next() {
+		var commandID uint64
+		if err = rows.Scan(&commandID); err != nil {
+			return fmt.Errorf("扫描标签指令关联关系失败: %v", err)
+		}
+		commandIDList = append(commandIDList, commandID)
+	}
+	if err = rows.Err(); err != nil {
+		return fmt.Errorf("遍历标签指令关联关系结果集失败: %v", err)
+	}
+
+	// 1. 更新SQLite数据库中的标签
+	_, err = tx.Exec(
+		"UPDATE tags SET name = ?, description = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+		tag.Name, tag.Description, tag.UpdatedAt, tag.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("更新标签失败: %v", err)
 	}
-
-	// 先删除现有的OS关系
-	if err := RemoveAllOSFromTagSQLite(tag.ID); err != nil {
-		return fmt.Errorf("删除标签OS关系失败: %v", err)
+	// 2. 更新标签的OS关联关系
+	for _, os := range tag.Os {
+		_, err = tx.Exec("INSERT OR IGNORE INTO tag_os (tag_id, os) VALUES (?, ?)", tag.ID, os)
+		if err != nil {
+			return fmt.Errorf("添加标签OS关联关系失败: %v", err)
+		}
 	}
-
-	// 重新添加OS关系
-	// for _, os := range tag.Os {
-	// 	if err := AddOSToTagSQLite(tag.ID, os); err != nil {
-	// 		return fmt.Errorf("添加标签OS关系失败: %v", err)
-	// 	}
-	// }
-
+	// 删除标签的OS关联关系中不在tag.Os中的OS
+	for _, os := range osList {
+		if !slices.Contains(tag.Os, os) {
+			_, err = tx.Exec("DELETE FROM tag_os WHERE tag_id = ? AND os = ?", tag.ID, os)
+			if err != nil {
+				return fmt.Errorf("删除标签OS关联关系失败: %v", err)
+			}
+		}
+	}
+	//3. 更新标签的指令关联关系
+	for _, commandID := range tag.CommandIDs {
+		_, err = tx.Exec(
+			"INSERT OR IGNORE INTO command_tags (command_id, tag_id) VALUES (?, ?)", commandID, tag.ID)
+		if err != nil {
+			return fmt.Errorf("添加标签指令关系失败: %v", err)
+		}
+	}
+	// 删除标签的指令关联关系中不在tag.CommandIDs中的指令
+	for _, commandID := range commandIDList {
+		if !slices.Contains(tag.CommandIDs, commandID) {
+			_, err = tx.Exec("DELETE FROM command_tags WHERE tag_id = ? AND command_id = ?", tag.ID, commandID)
+			if err != nil {
+				return fmt.Errorf("删除标签指令关联关系失败: %v", err)
+			}
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败: %v", err)
+	}
 	return nil
 }
 
 // DeleteTagSQLite 删除标签（软删除）
 func DeleteTagSQLite(id uint64) error {
-	now := time.Now()
+	// 输入验证
+	if id == 0 {
+		return fmt.Errorf("标签ID不能为空")
+	}
 
-	// 更新标签的deleted_at字段
-	result, err := DB.Exec(
+	tx, err := DB.Begin()
+	if err != nil {
+		return fmt.Errorf("开启事务失败: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("回滚事务失败: %v", rollbackErr)
+			}
+		}
+	}()
+
+	now := time.Now()
+	// 1.更新标签的deleted_at字段
+	_, err = tx.Exec(
 		"UPDATE tags SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
 		now, now, id,
 	)
 	if err != nil {
 		return fmt.Errorf("删除标签失败: %v", err)
 	}
-
-	// 检查是否有行被更新
-	rowsAffected, err := result.RowsAffected()
+	//2.删除标签的OS关联关系
+	_, err = tx.Exec(
+		"DELETE FROM tag_os WHERE tag_id = ?",
+		id,
+	)
 	if err != nil {
-		return fmt.Errorf("获取删除影响的行数失败: %v", err)
+		return fmt.Errorf("删除标签OS关联关系失败: %v", err)
 	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("tag not found: %s", id)
+	//3.删除标签的指令关联关系
+	_, err = tx.Exec(
+		"DELETE FROM command_tags WHERE tag_id = ?",
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("删除标签指令关联关系失败: %v", err)
 	}
-
-	return nil
+	//4.提交事务
+	return tx.Commit()
 }
 
 func GetTagIDAndNameSQLite() ([]Tag, error) {

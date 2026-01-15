@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 )
 
@@ -59,7 +58,7 @@ type SortOption struct {
 }
 
 func (a *App) GetOptions(option Option) (response Response) {
-	fmt.Printf("GetOptions: %+v\n", option)
+	log.Printf("GetOptions: %+v\n", option)
 	switch option.Type {
 	case "commands", "all":
 		log.Printf("GetCommandsOptions")
@@ -71,10 +70,10 @@ func (a *App) GetOptions(option Option) (response Response) {
 		log.Printf("GetCollectionsOptions")
 		response.Data = getCollectionsOptions(option)
 	}
-	fmt.Printf("response: %+v\n", response)
-	fmt.Printf("response.data.tags: %+v\n", response.Data.(AllCommands).Tags)
-	fmt.Printf("response.data.collections: %+v\n", response.Data.(AllCommands).Collections)
-	fmt.Printf("response.data.commands: %+v\n", response.Data.(AllCommands).Commands)
+	log.Printf("response: %+v\n", response)
+	// fmt.Printf("response.data.tags: %+v\n", response.Data.(AllCommands).Tags)
+	// fmt.Printf("response.data.collections: %+v\n", response.Data.(AllCommands).Collections)
+	// fmt.Printf("response.data.commands: %+v\n", response.Data.(AllCommands).Commands)
 	return response
 }
 

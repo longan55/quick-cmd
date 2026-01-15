@@ -159,11 +159,6 @@ func GetCollectionsSQLite(option Option) ([]*Collection, error) {
 			return nil, fmt.Errorf("扫描集合失败: %v", err)
 		}
 
-		// 从关联表获取OS信息
-		// if collection.Os, err = GetCollectionOSsSQLite(collection.ID); err != nil {
-		// 	return nil, fmt.Errorf("获取集合OS失败: %v", err)
-		// }
-
 		// 处理deletedAt字段
 		if deletedAt.Valid {
 			collection.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")

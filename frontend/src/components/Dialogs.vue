@@ -9,16 +9,6 @@
       
       <div class="modal-content">
         <div class="form-group">
-          <label for="api-endpoint">API 端点</label>
-          <input type="text" id="api-endpoint" v-model="localSettings.apiEndpoint" placeholder="请输入API端点" />
-        </div>
-        
-        <div class="form-group">
-          <label for="api-key">API Key</label>
-          <input type="password" id="api-key" v-model="localSettings.apiKey" placeholder="请输入API Key" />
-        </div>
-        
-        <div class="form-group">
           <label for="theme">主题</label>
           <select id="theme" v-model="localSettings.theme">
             <option value="light">浅色</option>
@@ -81,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
   isSettingsModalOpen: {

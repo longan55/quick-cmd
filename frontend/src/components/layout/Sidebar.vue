@@ -144,7 +144,7 @@
 
 <script setup>
 // 导入Vue 3的响应式API和生命周期钩子
-import { ref, defineProps, defineEmits, watch } from 'vue';
+import { ref, watch } from 'vue';
 // 导入后端API函数
 
 // 定义组件属性

@@ -22,6 +22,11 @@ var (
 
 // InitSqlite 初始化SQLite数据库
 func InitSqlite() {
+	// 检查数据库连接是否已经初始化
+	if DB != nil {
+		return
+	}
+
 	// 检查数据库文件是否存在
 	_, err := os.Stat("quick-cmd.db")
 	fileExists := err == nil
@@ -68,8 +73,6 @@ func createTables() error {
 	`)
 	if err != nil {
 		return fmt.Errorf("创建tags表失败: %v", err)
-	} else {
-		log.Println("tags表创建成功")
 	}
 
 	// 创建集合表
@@ -86,8 +89,6 @@ func createTables() error {
 	`)
 	if err != nil {
 		return fmt.Errorf("创建collections表失败: %v", err)
-	} else {
-		log.Println("collections表创建成功")
 	}
 
 	// 创建命令表
@@ -120,8 +121,6 @@ func createTables() error {
 	`)
 	if err != nil {
 		return fmt.Errorf("创建command_tags表失败: %v", err)
-	} else {
-		log.Println("command_tags表创建成功")
 	}
 
 	// 创建命令与集合的多对多关系表
@@ -149,8 +148,6 @@ func createTables() error {
 	`)
 	if err != nil {
 		return fmt.Errorf("创建tag_os表失败: %v", err)
-	} else {
-		log.Println("tag_os表创建成功")
 	}
 
 	// 创建集合与OS的关联表
@@ -164,8 +161,6 @@ func createTables() error {
 	`)
 	if err != nil {
 		return fmt.Errorf("创建collection_os表失败: %v", err)
-	} else {
-		log.Println("collection_os表创建成功")
 	}
 
 	// 创建命令与OS的关联表
@@ -179,8 +174,6 @@ func createTables() error {
 	`)
 	if err != nil {
 		return fmt.Errorf("创建command_os表失败: %v", err)
-	} else {
-		log.Println("command_os表创建成功")
 	}
 
 	// 为OS关联表创建索引，提高查询性能
@@ -209,15 +202,6 @@ func AddOSToTagSQLite(tx *sql.Tx, tagID uint64, os string) error {
 	_, err := tx.Exec(
 		"INSERT OR IGNORE INTO tag_os (tag_id, os) VALUES (?, ?)",
 		tagID, os,
-	)
-	return err
-}
-
-// RemoveAllOSFromTagSQLite 从标签移除所有OS
-func RemoveAllOSFromTagSQLite(tagID uint64) error {
-	_, err := DB.Exec(
-		"DELETE FROM tag_os WHERE tag_id = ?",
-		tagID,
 	)
 	return err
 }
