@@ -6,17 +6,23 @@ import (
 	"time"
 )
 
+type CommandIDName struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
+}
+
 // Tag 标签结构体
 type Tag struct {
-	ID          uint64   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description,omitempty"`
-	SearchCount int      `json:"searchCount,omitempty"`
-	Os          []string `json:"os,omitempty"`
-	CommandIDs  []uint64 `json:"commandIds,omitempty"`
-	CreatedAt   string   `json:"createdAt,omitempty"`
-	UpdatedAt   string   `json:"updatedAt,omitempty"`
-	DeletedAt   string   `json:"deletedAt,omitempty"`
+	ID            uint64          `json:"id"`
+	Name          string          `json:"name"`
+	Description   string          `json:"description,omitempty"`
+	SearchCount   int             `json:"searchCount,omitempty"`
+	Os            []string        `json:"os,omitempty"`
+	CommandIDs    []uint64        `json:"commandIds,omitempty"`
+	ComandIdNames []CommandIDName `json:"commandIdNames,omitempty"`
+	CreatedAt     string          `json:"createdAt,omitempty"`
+	UpdatedAt     string          `json:"updatedAt,omitempty"`
+	DeletedAt     string          `json:"deletedAt,omitempty"`
 }
 
 // CreateTag 创建标签

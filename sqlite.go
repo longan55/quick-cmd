@@ -38,7 +38,8 @@ func InitSqlite() {
 		panic(err)
 	}
 	DB = db
-	DB.SetMaxOpenConns(1)
+	// 增加最大连接数，避免嵌套查询时的连接阻塞
+	DB.SetMaxOpenConns(10)
 
 	// 如果文件不存在，先创建数据库文件
 	if !fileExists {

@@ -154,11 +154,11 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 		// for _, os := range option.Os {
 		// 	query += fmt.Sprintf(" AND tos.os = '%s' ", os)
 		// }
-		args, err := SQL_Slice_To_In_Args(option.Os)
+		args1, err := SQL_Slice_To_In_Args(option.Os)
 		if err != nil {
 			return nil, fmt.Errorf("转换OS切片为SQLite IN 子句参数失败: %v", err)
 		}
-		query += fmt.Sprintf(" AND tos.os IN %s", args)
+		query += fmt.Sprintf(" AND tos.os IN %s", args1)
 	}
 
 	query += " ORDER BY t.created_at DESC"
@@ -180,7 +180,9 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 	defer rows.Close()
 	log.Printf("查询标签列表成功: %+v", rows)
 	// 遍历结果集
+	var i int
 	for rows.Next() {
+		log.Printf("A%d", i)
 		var tag Tag
 		var deletedAt sql.NullTime
 		// var osString string
@@ -192,11 +194,20 @@ func GetTagsSQLite(option Option) ([]*Tag, error) {
 			log.Printf("扫描标签失败: %v", err)
 			return nil, fmt.Errorf("扫描标签失败: %v", err)
 		}
+		log.Printf("B%d", i)
 
 		// 处理deletedAt字段
 		if deletedAt.Valid {
 			tag.DeletedAt = deletedAt.Time.Format("2006-01-02 15:04:05")
 		}
+		log.Printf("C%d", i)
+		// 从关联表获取指令关联关系
+		if tag.ComandIdNames, err = GetCommandIDsByTagIDSQLite(tag.ID); err != nil {
+			return nil, fmt.Errorf("获取标签指令关联关系失败: %v", err)
+		} else {
+			log.Printf("标签[%d]关联指令: %+v", tag.ID, tag.ComandIdNames)
+		}
+		log.Printf("D%d", i)
 
 		tags = append(tags, &tag)
 	}
@@ -380,4 +391,33 @@ func GetTagIDAndNameSQLite() ([]Tag, error) {
 	}
 
 	return tags, nil
+}
+
+func GetCommandIDsByTagIDSQLite(tagID uint64) ([]CommandIDName, error) {
+	log.Printf("GetCommandIDsByTagIDSQLite tagID: %d", tagID)
+	var commandIDs []CommandIDName
+	query := "SELECT command_id, name FROM command_tags ct LEFT JOIN commands cmd ON ct.command_id = cmd.id WHERE tag_id = ?"
+	log.Printf("GetCommandIDsByTagIDSQLite SQL: %s, tagID: %d", query, tagID)
+
+	rows, err := DB.Query(query, tagID)
+	if err != nil {
+		log.Printf("查询标签指令关联关系失败: %v", err)
+		return nil, fmt.Errorf("查询标签指令关联关系失败: %v", err)
+	}
+	defer rows.Close()
+	log.Printf("查询标签指令关联关系成功: %+v", rows)
+	for rows.Next() {
+		var commandID uint64
+		var name string
+		if err = rows.Scan(&commandID, &name); err != nil {
+			return nil, fmt.Errorf("扫描标签指令关联关系失败: %v", err)
+		}
+		commandIDs = append(commandIDs, CommandIDName{ID: commandID, Name: name})
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历标签指令关联关系结果集失败: %v", err)
+	}
+	log.Printf("标签[%d]关联指令: %+v", tagID, commandIDs)
+	return commandIDs, nil
 }
