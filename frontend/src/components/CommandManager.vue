@@ -121,9 +121,7 @@ const settings = ref({
 });
 
 // 标签菜单数据 - 稳定的数据，不会在切换内容时改变
-const tags = ref([
-  { id: 0, name: '全部标签', description: '开发相关指令', icon: '🏷️' },
-]);
+const tags = ref([]);
 
 // 集合菜单数据 - 稳定的数据，不会在切换内容时改变
 const collections = ref([
@@ -263,14 +261,7 @@ function getOptionAndHandle(option){
       }
     }
     
-    // 确保tags和collections至少包含一个默认项
-    if (menuType.value === 'tags' && tags.value.length === 0) {
-      tags.value = [{ id: 0, name: '全部标签', description: '开发相关指令', icon: '🏷️' }];
-    }
-    
-    if (menuType.value === 'collections' && collections.value.length === 0) {
-      collections.value = [{ id: 0, name: '全部集合', description: '全部集合', icon: '📁' }];
-    }
+
   }).catch((error) => {
     console.error("获取数据失败:", error);
   });
@@ -322,6 +313,11 @@ function toggleSortDirection(option) {
 function toggleAddInterface(type) {
   // 如果当前界面是目标类型，则关闭；否则打开目标类型界面
   activeAddInterface.value = activeAddInterface.value === type ? '' : type;
+  // 打开新增界面时，关闭编辑界面
+  if (activeAddInterface.value !== '') {
+    activeEditInterface.value = '';
+    selectedItem.value = null;
+  }
 }
 
 // 切换设置模态框
@@ -365,16 +361,10 @@ function refreshData() {
   
   GetOptions(tagOption).then((result) => {
     console.log("刷新标签数据成功:", result);
-    // 确保获取完整的标签数据
     if (result.data && result.data.tags) {
-      // 保留默认的"全部标签"，添加其他标签
-      const defaultTag = tags.value[0];
-      const newTags = result.data.tags.filter(tag => tag.id !== 0);
-      tags.value = [defaultTag, ...newTags];
+      tags.value = result.data.tags;
     } else if (result.tags) {
-      const defaultTag = tags.value[0];
-      const newTags = result.tags.filter(tag => tag.id !== 0);
-      tags.value = [defaultTag, ...newTags];
+      tags.value = result.tags;
     }
   }).catch((error) => {
     console.error("刷新标签数据失败:", error);
@@ -487,6 +477,10 @@ function toggleEditInterface(type) {
   if (activeEditInterface.value === '') {
     selectedItem.value = null;
   }
+  // 打开编辑界面时，关闭新增界面
+  if (activeEditInterface.value !== '') {
+    activeAddInterface.value = '';
+  }
 }
 
 // 编辑项目
@@ -574,17 +568,10 @@ onMounted(() => {
   // 先获取标签数据
   GetOptions(initialOption).then((result) => {
     console.log("获取初始标签数据成功:", result);
-    // 确保获取完整的标签数据
     if (result.data && result.data.tags) {
-      // 保留默认的"全部标签"，添加其他标签
-      const defaultTag = tags.value[0];
-      console.log("默认标签:", defaultTag);
-      const newTags = result.data.tags.filter(tag => tag.id !== 0);
-      tags.value = [defaultTag, ...newTags];
+      tags.value = result.data.tags;
     } else if (result.tags) {
-      const defaultTag = tags.value[0];
-      const newTags = result.tags.filter(tag => tag.id !== 0);
-      tags.value = [defaultTag, ...newTags];
+      tags.value = result.tags;
     }
   }).catch((error) => {
     console.error("获取初始标签数据失败:", error);

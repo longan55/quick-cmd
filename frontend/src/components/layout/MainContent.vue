@@ -208,7 +208,7 @@
     </div>
     
     <!-- 编辑命令界面 -->
-    <div v-if="activeEditInterface === 'command'" class="add-interface">
+    <div v-else-if="activeEditInterface === 'command'" class="add-interface">
       <div class="interface-header">
         <h2>编辑指令</h2>
         <button class="close-button" @click="$emit('toggle-edit-interface', 'command')">×</button>
